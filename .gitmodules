@@ -1,3 +1,12 @@
 [submodule "lib/hw-setup"]
 	path = lib/hw-setup
 	url = git@github.com:vaisriv/hw-setup
+[submodule "reports/p01"]
+	path = reports/p01
+	url = git@github.com:vaisriv/enae644-p01
+[submodule "reports/p02"]
+	path = reports/p02
+	url = git@github.com:vaisriv/enae644-p02
+[submodule "reports/p03"]
+	path = reports/p03
+	url = git@github.com:vaisriv/enae644-p03
