@@ -1,0 +1,138 @@
+@article{lecleach2021lucidgames,
+    title         = {LUCIDGames: Online Unscented Inverse Dynamic Games for Adaptive Trajectory Prediction and Planning},
+    author        = {Le Cleac'h, Simon and Schwager, Mac and Manchester, Zachary},
+    year          = {2021},
+    month         = {7},
+    journal       = {IEEE Robotics and Automation Letters},
+    volume        = {6},
+    number        = {3},
+    pages         = {5485--5492},
+    doi           = {10.1109/LRA.2021.3074880},
+    issn          = {2377-3766},
+    abstract      = {
+        Existing game-theoretic planning methods assume that the robot knows the objective functions of the other agents a priori while, in practical scenarios, this is rarely the case. This letter introduces LUCIDGames, an inverse optimal control algorithm that is able to estimate the other agents' objective functions in real time, and incorporate those estimates online into a receding-horizon game-theoretic planner. LUCIDGames solves the inverse optimal control problem by recasting it in a recursive parameter-estimation framework. LUCIDGames uses an unscented Kalman filter (UKF) to iteratively update a Bayesian estimate of the other agents' cost function parameters, improving that estimate online as more data is gathered from the other agents' observed trajectories. The planner then takes account of the uncertainty in the Bayesian parameter estimates of other agents by planning a trajectory for the robot subject to uncertainty ellipse constraints. The algorithm assumes no explicit communication or coordination between the robot and the other agents in the environment. An MPC implementation of LUCIDGames demonstrates real-time performance on complex autonomous driving scenarios with an update frequency of 40~Hz. Empirical results demonstrate that LUCIDGames improves the robot's performance over existing game-theoretic and traditional MPC planning approaches. Our implementation of LUCIDGames is available at https://github.com/RoboticExplorationLab/LUCIDGames.jl.
+    },
+    keywords      = {Trajectory;Linear programming;Games;Robot kinematics;Collision avoidance;Vehicles;Planning;Multi-Robot systems;motion and path planning;intelligent transportation systems}
+}
+
+@inproceedings{espinoza2022deep,
+    title         = {Deep Interactive Motion Prediction and Planning: Playing Games with Motion Prediction Models},
+    author        = {Espinoza, Jose Luis Vazquez and Liniger, Alexander and Schwarting, Wilko and Rus, Daniela and Gool, Luc Van},
+    year          = {2022},
+    month         = {6},
+    booktitle     = {Proceedings of The 4th Annual Learning for Dynamics and Control Conference},
+    publisher     = {PMLR},
+    series        = {Proceedings of Machine Learning Research},
+    volume        = {168},
+    pages         = {1006--1019},
+    doi           = {10.48550/arXiv.2204.02392},
+    abstract      = {
+        In most classical Autonomous Vehicle (AV) stacks, the prediction and planning layers are separated, limiting the planner to react to predictions that are not informed by the planned trajectory of the AV. This work presents a module that tightly couples these layers via a game-theoretic Model Predictive Controller (MPC) that uses a novel interactive multi-agent neural network policy as part of its predictive model. In our setting, the MPC planner considers all the surrounding agents by informing the multi-agent policy with the planned state sequence. Fundamental to the success of our method is the design of a novel multi-agent policy network that can steer a vehicle given the state of the surrounding agents and the map information. The policy network is trained implicitly with ground-truth observation data using backpropagation through time and a differentiable dynamics model to roll out the trajectory forward in time. Finally, we show that our multi-agent policy network learns to drive while interacting with the environment, and, when combined with the game-theoretic MPC planner, can successfully generate interactive behaviors.
+    },
+    editor        = {Firoozi, Roya and Mehr, Negar and Yel, Esen and Antonova, Rika and Bohg, Jeannette and Schwager, Mac and Kochenderfer, Mykel},
+    keywords      = {Robotics; Artificial Intelligence; Multiagent Systems}
+}
+
+@article{xu2019goal,
+    title         = {Goal Identification Control Using an Information Entropy-Based Goal Uncertainty Metric},
+    author        = {Xu, Kai and Yin, Quanjun},
+    year          = {2019},
+    month         = {3},
+    journal       = {Entropy},
+    publisher     = {MDPI AG},
+    volume        = {21},
+    number        = {3},
+    pages         = {299},
+    doi           = {10.3390/e21030299},
+    issn          = {1099-4300},
+    abstract      = {
+        Recent research has found situations where the identification of agent goals could be purposefully controlled, either by changing the underlying environment to make it easier, or exploiting it during agent planning to delay the opponent’s goal recognition. The paper tries to answer the following questions: what kinds of actions contain less information and more uncertainty about the agent’s real goal, and how to describe this uncertainty; what is the best way to control the process of goal identification. Our contribution is the introduction of a new measure we call relative goal uncertainty (rgu) with which we assess the goal-related information that each action contains. The rgu is a relative value associated with each action and represents the goal uncertainty quantified by information entropy after the action is taken compared to other executable ones in each state. After that, we show how goal vagueness could be controlled either for one side or for both confronting sides, and formulate this goal identification control problem as a mixed-integer programming problem. Empirical evaluation shows the effectiveness of the proposed solution in controlling goal identification process.
+    },
+    keywords      = {goal uncertainty; goal recognition; goal identification control; information entropy}
+}
+
+@article{xu2020single,
+    title         = {Single Real Goal, Magnitude-Based Deceptive Path-Planning},
+    author        = {Xu, Kai and Zeng, Yunxiu and Qin, Long and Yin, Quanjun},
+    year          = {2020},
+    month         = {1},
+    journal       = {Entropy},
+    publisher     = {MDPI AG},
+    volume        = {22},
+    number        = {1},
+    pages         = {88},
+    doi           = {10.3390/e22010088},
+    issn          = {1099-4300},
+    abstract      = {
+        Deceptive path-planning is the task of finding a path so as to minimize the probability of an observer (or a defender) identifying the observed agent’s final goal before the goal has been reached. It is one of the important approaches to solving real-world challenges, such as public security, strategic transportation, and logistics. Existing methods either cannot make full use of the entire environments’ information, or lack enough flexibility for balancing the path’s deceptivity and available moving resource. In this work, building on recent developments in probabilistic goal recognition, we formalized a single real goal magnitude-based deceptive path-planning problem followed by a mixed-integer programming based deceptive path maximization and generation method. The model helps to establish a computable foundation for any further imposition of different deception concepts or strategies, and broadens its applicability in many scenarios. Experimental results showed the effectiveness of our methods in deceptive path-planning compared to the existing one.
+    },
+    keywords      = {deception; path-planning; plan recognition; information entropy}
+}
+
+@article{zeng2023recognition,
+    title         = {Recognition and interfere deceptive behavior based on inverse reinforcement learning and game theory},
+    author        = {Zeng, Yunxiu and Xu, Kai},
+    year          = {2023},
+    month         = {4},
+    journal       = {Journal of Systems Engineering and Electronics},
+    volume        = {34},
+    number        = {2},
+    pages         = {270--288},
+    doi           = {10.23919/JSEE.2023.000012},
+    issn          = {1004-4132},
+    abstract      = {
+        In real-time strategy (RTS) games, the ability of recognizing other players' goals is important for creating artifical intelligence (AI) players. However, most current goal recognition methods do not take the player's deceptive behavior into account which often occurs in RTS game scenarios, resulting in poor recognition results. In order to solve this problem, this paper proposes goal recognition for deceptive agent, which is an extended goal recognition method applying the deductive reason method (from general to special) to model the deceptive agent's behavioral strategy. First of all, the general deceptive behavior model is proposed to abstract features of deception, and then these features are applied to construct a behavior strategy that best matches the deceiver's historical behavior data by the inverse reinforcement learning (IRL) method. Final, to interfere with the deceptive behavior implementation, we construct a game model to describe the confrontation scenario and the most effective interference measures.
+    },
+    keywords      = {Behavioral sciences;Games;Modeling;Observers;Path planning;Planning;Game theory;deceptive path planning;inverse reinforcement learning (IRL);game theory;goal recognition}
+}
+
+@inproceedings{netter2024motion,
+    title         = {Motion Planning with Adversary Avoidance Using Gaussian Process Classification},
+    author        = {Netter, Josh and Vamvoudakis, Kyriakos G.},
+    year          = {2024},
+    month         = {12},
+    booktitle     = {2024 IEEE 63rd Conference on Decision and Control (CDC)},
+    volume        = {},
+    number        = {},
+    pages         = {2299--2304},
+    doi           = {10.1109/CDC56724.2024.10886561},
+    issn          = {2576-2370},
+    abstract      = {
+        In this paper, we propose an optimal motion planning framework to allow a player agent to navigate a multi-agent environment while simultaneously identifying and avoiding potential adversaries attempting to intercept it. The behavior of an adversarial agent pursuing the player agent is defined, and a method for identifying these adversaries in real-time using Gaussian process classification is formulated. A method of real-time path replanning is then proposed and proven to avoid collisions with likely adversarial agents. The algorithm includes functionality to identify non-adversarial independent agents to avoid unnecessary replanning or the freezing robot problem. The efficacy is then shown in simulations.
+    },
+    keywords      = {Navigation;Urban areas;Gaussian processes;Predictive models;Real-time systems;Planning;Classification algorithms;Collision avoidance;Robots}
+}
+
+@inproceedings{tastan2012learning,
+    title         = {Learning to intercept opponents in first person shooter games},
+    author        = {Tastan, Bulent and Chang, Yuan and Sukthankar, Gita},
+    year          = {2012},
+    month         = {9},
+    booktitle     = {2012 IEEE Conference on Computational Intelligence and Games (CIG)},
+    volume        = {},
+    number        = {},
+    pages         = {100--107},
+    doi           = {10.1109/CIG.2012.6374144},
+    issn          = {2325-4289},
+    abstract      = {
+        One important aspect of creating game bots is adversarial motion planning: identifying how to move to counter possible actions made by the adversary. In this paper, we examine the problem of opponent interception, in which the goal of the bot is to reliably apprehend the opponent. We present an algorithm for motion planning that couples planning and prediction to intercept an enemy on a partially-occluded Unreal Tournament map. Human players can exhibit considerable variability in their movement preferences and do not uniformly prefer the same routes. To model this variability, we use inverse reinforcement learning to learn a player-specific motion model from sets of example traces. Opponent motion prediction is performed using a particle filter to track candidate hypotheses of the opponent's location over multiple time horizons. Our results indicate that the learned motion model has a higher tracking accuracy and yields better interception outcomes than other motion models and prediction methods.
+    },
+    keywords      = {Games;Learning;Trajectory;Tracking;Entropy;Vectors;Mathematical model}
+}
+
+@article{nichols2022adversarial,
+    title         = {Adversarial Sampling-Based Motion Planning},
+    author        = {Nichols, Hayden and Jimenez, Mark and Goddard, Zachary and Sparapany, Michael and Boots, Byron and Mazumdar, Anirban},
+    year          = {2022},
+    month         = {4},
+    journal       = {IEEE Robotics and Automation Letters},
+    volume        = {7},
+    number        = {2},
+    pages         = {4267--4274},
+    doi           = {10.1109/LRA.2022.3148464},
+    issn          = {2377-3766},
+    abstract      = {
+        There are many scenarios in which a mobile agent may not want its path to be predictable. Examples include preserving privacy or confusing an adversary. However, this desire for deception can conflict with the need for a low path cost. Optimal plans such as those produced by RRT\textasteriskcentered may have low path cost, but their optimality makes them predictable. Similarly, a deceptive path that features numerous zig-zags may take too long to reach the goal. We address this trade-off by drawing inspiration from adversarial machine learning. We propose a new planning algorithm, which we title Adversarial RRT\textasteriskcentered. Adversarial RRT\textasteriskcentered attempts to deceive machine learning classifiers by incorporating a predicted measure of deception into the planner cost function. Adversarial RRT\textasteriskcentered considers both path cost and a measure of predicted deceptiveness in order to produce a trajectory with low path cost that still has deceptive properties. We demonstrate the performance of Adversarial RRT\textasteriskcentered, with two measures of deception, using a simulated Dubins vehicle. We show how Adversarial RRT\textasteriskcentered can decrease cumulative RNN accuracy across paths to 10\%, compared to 46\% cumulative accuracy on near-optimal RRT\textasteriskcentered paths, while keeping path length within 16\% of optimal. We also present an example demonstration where the Adversarial RRT\textasteriskcentered planner attempts to safely deliver a high value package while an adversary observes the path and tries to intercept the package.
+    },
+    keywords      = {Observers;Prediction algorithms;Costs;Planning;Navigation;Robots;Deep learning;Motion and path planning;deep learning methods;integrated planning and learning}
+}
