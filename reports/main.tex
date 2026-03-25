@@ -10,6 +10,8 @@
 \usepackage{amssymb}
 \usepackage{graphicx}
 
+\usepackage{lipsum}
+
 % Config Options
 \IEEEoverridecommandlockouts
 \overrideIEEEmargins
@@ -36,47 +38,78 @@
 \thispagestyle{empty}
 \pagestyle{empty}
 
-% FIXME:
-% Account for proposal review comments in intro, motivation, and methodology sections
-% "Looks good. Note that something at least as complicated as RRT* will be required (since we are doing RRT for homework 2 and 3). Also, RRT* does not use a grid, so if you want to use grid-based algorithms, that is fine, but you need to do something more sophisticated than A* in that case."
+% TODO:
+% - [ ] add abstract
+% - [ ] formal problem definition of the problem you are solving
+% - [ ] make sure to pick the exact methods (specific algorithms and implementation processes for each agent) that you plan to use
+% - [ ] please document current progress on your implementation (what you have done so far/are currently doing)
+% - [ ] list the experiments that you plan to run/currently running experiments
 
-% Introduction
+% TODO: add abstract
+\section{Abstract} \label{sec:abstract}
+
+% FIXME:
+\lipsum[1-2]
+
 \section{Introduction} \label{sec:introduction}
 
-This project falls under option 1: practical implementation of pre-existing algorithm(s). The goal is to implement and evaluate algorithms from two complementary sub-fields of adversarial motion planning. The first is \emph{deceptive motion planning}, which is concerned with generating trajectories that conceal the agent's true objective from an observer \cite{nichols2022adversarial, xu2020single}. The second is \emph{goal identification and interception}, which seeks to infer a observed agent's hidden objective and plan a trajectory to intercept it \cite{zeng2023recognition, tastan2012learning}. Rather than studying these in isolation, the project will pit a deceptive planner against an interception-focused planner in a shared environment, providing a direct adversarial evaluation of each algorithm's strengths and limitations.
+The goal of this project is to implement and evaluate algorithms from two complementary sub-fields of adversarial motion planning. The first is \emph{deceptive motion planning}, which is concerned with generating trajectories that conceal the agent's true objective from an observer \cite{nichols2022adversarial, xu2020single}. The second is \emph{goal identification and interception}, which seeks to infer an observed agent's hidden objective and plan a trajectory to intercept it \cite{zeng2023recognition, tastan2012learning}. Rather than studying these in isolation, the project will pit a deceptive planner against an interception-focused planner in a shared environment, providing a direct adversarial evaluation of each algorithm's strengths and limitations. Both agents will employ planning methods at least as sophisticated as RRT*, incorporating learning-based and game-theoretic components on top of their respective base planners.
 
-% Motivation
 \section{Motivation} \label{sec:motivation}
 
-% High Level
-\subsection{High-Level Motivation} \label{sec:motivation/high-level}
-
-Deceptive motion planning has direct applications in video game AI, where non-player characters must exhibit unpredictable yet purposeful behavior \cite{tastan2012learning, zeng2023recognition}. However, the relevance of this problem extends well beyond entertainment into real-world domains such as strategic logistics, privacy-preserving navigation, and military operations. The ability to move deceptively can be the difference between mission success and failure \cite{xu2020single, nichols2022adversarial}, while the complementary problem of identifying and intercepting deceptive agents is equally critical: security and defense systems must be capable of recognizing when an observed agent is behaving deceptively and responding accordingly \cite{zeng2023recognition, xu2019goal}. Studying the interplay between deception and counter-deception will provide insight into the robustness of each approach and reveals failure modes that would not surface when evaluating either in isolation.
+Deceptive motion planning has direct applications in video game AI, where non-player characters must exhibit unpredictable yet purposeful behavior \cite{tastan2012learning, zeng2023recognition}. However, the relevance of this problem extends well beyond entertainment into real-world domains such as strategic logistics, privacy-preserving navigation, and military operations. The ability to move deceptively can be the difference between mission success and failure \cite{xu2020single, nichols2022adversarial}, while the complementary problem of identifying and intercepting deceptive agents is equally critical: security and defense systems must be capable of recognizing when an observed agent is behaving deceptively and responding accordingly \cite{zeng2023recognition, xu2019goal}. Studying the interplay between deception and counter-deception will provide insight into the robustness of each approach and reveal failure modes that would not surface when evaluating either in isolation.
 
 It is important to note that prior work has explored this coupling in the context of autonomous vehicles \cite{espinoza2022deep} and multi-agent navigation \cite{netter2024motion, lecleach2021lucidgames}, but an adversarial pitting in a strategy-game context remains underexplored.
 
-% Personal
-\subsection{Personal Motivation} \label{sec:motivation/personal}
+\section{Related Work} \label{sec:related-work}
 
-On a personal level, I am an avid player of competitive first-person shooter games and have recently spent considerable time playing tactical shooters such as Valorant and Counter-Strike 2 with friends. In these games, victory often hinges on maintaining superior positioning to the opposing players, which maps directly onto the deceptive motion planning problem. Additionally, I have a longstanding interest in applying machine learning to games: I grew up playing chess and have always found engines like Stockfish and Leela Chess to be remarkable feats of engineering. This project offers an opportunity to combine these interests while gaining hands-on experience with state-of-the-art techniques in adversarial planning, inverse reinforcement learning, and game-theoretic reasoning, skills that are broadly applicable to robotics and multi-agent systems research.
+\subsection{Deceptive Motion Planning} \label{sec:related-work/deceptive-motion-planning}
 
-% Methodology
+A central challenge in deceptive motion planning is balancing path cost against unpredictability. Nichols et al.\ \cite{nichols2022adversarial} address this trade-off with Adversarial RRT*, a sampling-based planner that incorporates a learned deception cost into the RRT* objective. Their approach uses a recurrent neural network as a surrogate observer and penalizes trajectories that the network can classify correctly, achieving low observer accuracy while keeping path length near-optimal. Xu et al.\ \cite{xu2020single} take a complementary approach grounded in probabilistic goal recognition, formalizing deceptive path planning as a mixed-integer program that maximizes goal ambiguity with respect to an observer's belief distribution. Both methods assume a passive observer and evaluate deception in isolation rather than against an active adversary, which is the gap this project aims to address.
+
+\subsection{Goal Recognition and Interception} \label{sec:related-work/goal-recognition-and-interception}
+
+On the opposing side of the problem, several works focus on inferring an agent's hidden objective and acting on that inference. Xu and Yin \cite{xu2019goal} introduce \emph{relative goal uncertainty}, an entropy-based metric that quantifies the goal-related information contained in each action, and show how it can be used to control the goal identification process from either side of the interaction. Zeng and Xu \cite{zeng2023recognition} extend goal recognition to explicitly account for deceptive agents by using inverse reinforcement learning to recover a behavioral model from the deceiver's historical data, then constructing a game-theoretic interference strategy. In the domain of first-person shooter games, Tastan et al.\ \cite{tastan2012learning} learn player-specific motion models via inverse reinforcement learning and use particle-filter-based prediction to intercept opponents on partially occluded maps. These works provide the algorithmic foundations for the interceptor agent in this project, particularly the combination of learned behavioral models with online prediction.
+
+\subsection{Game-Theoretic and Interactive Planning} \label{sec:related-work/game-theoretic-and-interactive-planning}
+
+A related body of work frames multi-agent planning as a dynamic game in which each agent's strategy depends on the others'. Le Cleac'h et al.\ \cite{lecleach2021lucidgames} propose LUCIDGames, which pairs an unscented Kalman filter for online estimation of other agents' cost functions with a receding-horizon game-theoretic planner, demonstrating real-time performance in autonomous driving scenarios. Espinoza et al.\ \cite{espinoza2022deep} tightly couple prediction and planning through a game-theoretic MPC that uses a multi-agent neural network policy as its predictive model, producing interactive behaviors between an autonomous vehicle and surrounding traffic. While both of these works operate in the autonomous driving domain, they demonstrate the value of jointly reasoning about one's own plan and other agents' likely responses, directly informing the adversarial evaluation framework in this project.
+
+\subsection{Adversary-Aware Motion Planning} \label{sec:related-work/adversary-aware-motion-planning}
+
+Most closely related to the present work, Netter and Vamvoudakis \cite{netter2024motion} propose a motion planning framework in which a player agent navigates a multi-agent environment while simultaneously identifying and avoiding potential adversaries using Gaussian process classification. Their method includes real-time replanning to avoid likely adversarial agents and distinguishes adversaries from benign agents to prevent unnecessary evasive maneuvers. This project builds on a similar premise but inverts the emphasis: rather than treating interception avoidance as a byproduct of adversary classification, the deceptive agent here will actively minimize observer accuracy as a first-class planning objective, while the interceptor will be a fully autonomous adversary rather than a fixed behavioral model.
+
+% TODO: formal problem definition of the problem you are solving
+\section{Formal Problem Definition} \label{sec:formal-problem-definition}
+
+% FIXME:
+\lipsum[1-2]
+
 \section{Methodology} \label{sec:methodology}
 
-The project will be implemented in Python, chosen for its extensive ecosystem of machine learning and scientific computing libraries. In particular, I plan to use JAX (via the Equinox library) as the primary framework for differentiable programming, automatic differentiation, and GPU-accelerated computation.
+% TODO: make sure to pick the exact methods (specific algorithms and implementation processes for each agent) that you plan to use
+\subsection{Overview} \label{sec:methodology/overview}
 
-The core of the project involves implementing two competing agents. The first agent will employ a deceptive motion planning algorithm inspired by approaches such as Adversarial RRT* \cite{nichols2022adversarial} and entropy-based deceptive path planning \cite{xu2020single, xu2019goal}, which generate trajectories that minimize an observer's ability to infer the agent's true goal. The second agent will implement an identification and interception strategy, drawing on techniques from inverse reinforcement learning and game-theoretic prediction \cite{zeng2023recognition, tastan2012learning, lecleach2021lucidgames}, with the objective of recognizing the deceptive agent's true goal and planning an intercept trajectory in real time. The approach of coupling adversary identification with reactive planning follows the framework proposed by Netter and Vamvoudakis \cite{netter2024motion}, adapted to the adversarial evaluation setting.
+The project is implemented in Python, chosen for its extensive ecosystem of machine learning and scientific computing libraries. In particular, we use JAX (via the Equinox library) as the primary framework for differentiable programming, automatic differentiation, and GPU-accelerated computation.
 
-Of note, despite several of the referenced algorithms being originally developed for three-dimensional environments (e.g., first-person shooter game maps \cite{tastan2012learning}), I will be generalizing down to a simplified two-dimensional grid for ease of development and in the interest of having a finished product before the end of the semester. The simulation environment will be custom-built in Python, providing full control over the experimental setup and enabling systematic evaluation of each algorithm's performance under varying conditions.
+The core of the project involves two competing agents in a continuous two-dimensional workspace. The first agent employs a deceptive motion planning algorithm building on Adversarial RRT* \cite{nichols2022adversarial}, which augments the sampling-based RRT* planner with a learned deception cost to generate trajectories that minimize an observer's ability to infer the agent's true goal. Entropy-based deceptive planning techniques \cite{xu2020single, xu2019goal} inform the design of the deception objective. The second agent utilizes an identification and interception strategy, drawing on techniques from inverse reinforcement learning and game-theoretic prediction \cite{zeng2023recognition, tastan2012learning, lecleach2021lucidgames}, with the objective of recognizing the deceptive agent's true goal and planning an intercept trajectory in real time. The approach of coupling adversary identification with reactive planning follows the framework proposed by Netter and Vamvoudakis \cite{netter2024motion}, adapted to the adversarial evaluation setting. Both agents thus operate well beyond basic shortest-path planning: the deceptive agent layers a learned deception metric on top of RRT*, while the interceptor combines online goal inference with reactive replanning.
 
-% Related Work
-\section{Related Work} \label{sec:related-work}
-% TODO:
-% - This should include 5-10 cutting-edge papers related to what you are doing
-% - The goal here is to convey that you understand how what you plan to do fits into the bigger picture and other things that are siliar to it.
+Of note, despite several of the referenced algorithms being originally developed for three-dimensional environments (e.g., first-person shooter game maps \cite{tastan2012learning}), we work in a continuous two-dimensional workspace for ease of development and in the interest of completing the project within the semester. The simulation environment is custom-built in Python, providing full control over the experimental setup and enabling systematic evaluation of each algorithm's performance under varying conditions.
 
-% References
+% TODO: please document current progress on your implementation (what you have done so far/are currently doing)
+\subsection{Implementation} \label{sec:methodology/implementation}
+
+% FIXME:
+\lipsum[1-2]
+
+% TODO: list the experiments that you plan to run/currently running experiments
+\subsection{Procedure} \label{sec:methodology/procedure}
+
+% FIXME:
+\lipsum[1-2]
+
 \section*{References} \label{sec:references}
+
 \printbibliography[heading = none]
 
 \end{document}
