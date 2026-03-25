@@ -1,8 +1,8 @@
-@default_files = ("./reports/submission/main.tex");
+@default_files = ("./reports/main.tex");
 
-ensure_path('TEXINPUTS', '../../lib/ieeeconf//');
-$out_dir = "../../reports/submission/";
-$aux_dir = "../../.texaux/";
+ensure_path('TEXINPUTS', '../lib/ieeeconf//');
+$out_dir = "../reports/";
+$aux_dir = "../.texaux/";
 
 $aux_out_dir_report = 1;
 $bibtex_use = 2;
