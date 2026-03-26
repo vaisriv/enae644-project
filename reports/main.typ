@@ -5,7 +5,6 @@
     // TODO: add abstract
     abstract: [
         #set text(fill: blue)
-
         // FIXME:
         #lorem(100)
     ],
@@ -39,7 +38,7 @@
 // - [ ] add abstract
 // - [x] formal problem definition of the problem you are solving
 // - [x] make sure to pick the exact methods (specific algorithms and implementation processes for each agent) that you plan to use
-// - [ ] please document current progress on your implementation (what you have done so far/are currently doing)
+// - [x] please document current progress on your implementation (what you have done so far/are currently doing)
 // - [ ] list the experiments that you plan to run/currently running experiments
 
 = Introduction <introduction>
@@ -212,7 +211,7 @@ Rather than solving analytically for an equilibrium, we adopt an empirical adver
 
 - For Agent D: Observer classification accuracy at the time of goal completion, $P_theta (g^* | xi_D)$, and path length ratio $J_"path" (xi_D^*) \/ J_"path" (xi_D^"opt")$ where $xi_D^"opt"$ is the optimal (shortest) path
 - For Agent I: Goal inference accuracy $bb(1)[hat(g)(T) = g^*]$ and time-to-intercept relative to Agent D's arrival time
-- Overall: Success rate for each agent—does Agent D successfully reach $g^*$ before being intercepted, or does Agent I successfully intercept Agent D?
+- Overall: Success rate for each agent---does Agent D successfully reach $g^*$ before being intercepted, or does Agent I successfully intercept Agent D?
 
 ==== Interaction Dynamics <interaction-dynamics>
 The game proceeds as follows. Agent D generates a deceptive trajectory using Adversarial RRT\*. Agent I observes the trajectory incrementally and updates its belief distribution over goals using the IRL-learned behavioral model and particle filtering. Based on the updated belief, Agent I replans its interception trajectory using game-theoretic MPC. This cycle continues until one of two termination conditions is met: (a) Agent D reaches the true goal $g^*$, or (b) Agent I successfully intercepts Agent D (i.e., $||x_I (t) - x_D (t)|| < epsilon_"intercept"$ for some small threshold $epsilon_"intercept"$).
@@ -230,11 +229,31 @@ Of note, despite several of the referenced algorithms being originally developed
 
 #set text(fill: blue)
 
-// TODO: please document current progress on your implementation (what you have done so far/are currently doing)
 == Implementation <implementation>
 
-// FIXME:
-#lorem(200)
+Implementation is currently in progress, following a structured development approach. The first phase---comprehensive software specification---has been completed. This phase establishes the architectural foundation and detailed implementation plan before writing code, which is critical for a project of this complexity involving two interdependent agents, neural network components, and JAX-based differentiable programming.
+
+=== Software Specifications <software-specifications>
+A complete set of implementation-ready software specifications has been developed and documented in `./docs/spec/`. The specifications follow an agent-based architectural pattern, organizing the codebase into four primary packages: `src/deceptive/` for the deceptive agent, `src/interceptor/` for the interceptor agent, `src/shared/` for common components (workspace, trajectories, collision detection), and `src/simulation/` for the simulation controller and evaluation framework.
+
+The specifications include detailed pseudocode for all core algorithms. For the deceptive agent, this encompasses the Adversarial RRT\* planner with integrated deception cost evaluation, the RNN-based surrogate observer network architecture (implemented using Equinox), and the RRT\* tree data structure. For the interceptor agent, specifications detail the maximum entropy IRL implementation for learning the deceptive agent's behavioral model, the particle filter for maintaining and updating belief distributions over candidate goals, and the game-theoretic MPC formulation for computing interception controls.
+
+All data formats and schemas have been fully specified. Training data formats for both the RNN observer (synthetic trajectory dataset with goal labels) and IRL module (expert demonstrations from the deceptive agent) are defined using HDF5 storage with documented array shapes and metadata. Complete YAML configuration schemas specify workspace geometry (bounds and obstacles), agent parameters (kinodynamic constraints, planner hyperparameters), and simulation settings. Output data formats cover trajectory storage (CSV and NumPy formats), performance metrics (observer accuracy, path length ratio, belief entropy), and visualization specifications (workspace plots, belief evolution charts).
+
+JAX-specific implementation patterns are documented to ensure efficient GPU-accelerated execution. The specifications identify which components should be JIT-compiled (collision checking, cost functions, neural network inference) and which should not (RRT\* tree construction with dynamic branching). Strategies for using `vmap` for batch parallelization (collision checking for multiple points, particle filter updates), pytree registration for custom data structures, and proper PRNG key management for reproducibility are all detailed.
+
+Testing strategies have been defined across three levels. Unit tests will validate individual components such as collision detection algorithms (point-in-circle, point-in-polygon ray casting), trajectory interpolation accuracy, and RRT\* tree operations. Integration tests will verify the complete deceptive planning pipeline (RRT\* with observer network) and interception pipeline (particle filter with MPC). Validation tests will ensure algorithmic correctness: RRT\* should converge to optimal paths when the deception weight $alpha = 1$, the RNN observer should achieve greater than 80% classification accuracy on held-out test trajectories, and the particle filter should converge to the true goal given sufficient observations.
+
+=== Current Development Status <development-status>
+With the architectural specifications complete, implementation is proceeding in the following order. The first development phase focuses on shared infrastructure: the 2D workspace representation with obstacle modeling, collision detection primitives, trajectory data structures and interpolation utilities, and kinodynamic constraint enforcement. These components form the foundation for both agents and will be implemented first to enable parallel development of agent-specific modules.
+
+The second phase addresses neural network training. The RNN observer will be trained on synthetically generated optimal trajectories to each candidate goal, providing the deceptive agent with a surrogate observer for evaluating trajectory deceptiveness. Concurrently, the IRL module will be trained on demonstration data collected from the deceptive agent executing trajectories with various deception weights, enabling the interceptor to predict the deceiver's likely future actions.
+
+The third phase implements agent-specific planning algorithms. For the deceptive agent, this includes the Adversarial RRT\* planner integrating path cost and deception cost, and the deception cost evaluator that queries the trained observer network. For the interceptor agent, this includes the particle filter for belief tracking and the game-theoretic MPC solver for computing interception controls.
+
+The final phase integrates all components into the simulation controller, implements the adversarial game loop, and develops the metrics collection and visualization pipeline. This phase will also include comprehensive testing and validation against the criteria established in the specifications.
+
+Currently, the project has just finished specification, and will soon begin development---starting first with the shared infrastructure components in `src/shared/`.
 
 // TODO: list the experiments that you plan to run/currently running experiments
 == Procedure <procedure>
