@@ -4,6 +4,8 @@
     title: [ENAE644 Term Project],
     // TODO: add abstract
     abstract: [
+        #set text(fill: blue)
+
         // FIXME:
         #lorem(100)
     ],
@@ -35,8 +37,8 @@
 
 // TODO:
 // - [ ] add abstract
-// - [ ] formal problem definition of the problem you are solving
-// - [ ] make sure to pick the exact methods (specific algorithms and implementation processes for each agent) that you plan to use
+// - [x] formal problem definition of the problem you are solving
+// - [x] make sure to pick the exact methods (specific algorithms and implementation processes for each agent) that you plan to use
 // - [ ] please document current progress on your implementation (what you have done so far/are currently doing)
 // - [ ] list the experiments that you plan to run/currently running experiments
 
@@ -68,15 +70,156 @@ A related body of work frames multi-agent planning as a dynamic game in which ea
 
 Most closely related to the present work, Netter and Vamvoudakis~@netter2024motion propose a motion planning framework in which a player agent navigates a multi-agent environment while simultaneously identifying and avoiding potential adversaries using Gaussian process classification. Their method includes real-time replanning to avoid likely adversarial agents and distinguishes adversaries from benign agents to prevent unnecessary evasive maneuvers. This project builds on a similar premise but inverts the emphasis: rather than treating interception avoidance as a byproduct of adversary classification, the deceptive agent here will actively minimize observer accuracy as a first-class planning objective, while the interceptor will be a fully autonomous adversary rather than a fixed behavioral model.
 
-// TODO: formal problem definition of the problem you are solving
+#set text(fill: blue)
+
 = Formal Problem Definition <formal-problem-definition>
 
-// FIXME:
-#lorem(200)
+This section formalizes the adversarial motion planning problem as a two-agent scenario in which a deceptive agent attempts to reach a hidden goal while concealing its intent, and an interceptor agent seeks to infer the hidden goal and intercept the deceptive agent before the goal is reached.
 
+== Workspace and Agent Models <workspace-and-agent-models>
+
+We consider a bounded, continuous two-dimensional workspace $cal(W) subset RR^2$ containing a static obstacle set $cal(O) subset cal(W)$. The collision-free workspace is defined as $cal(W)_"free" = cal(W) backslash cal(O)$. Two agents operate within this workspace: a deceptive agent (Agent D) and an interceptor agent (Agent I).
+
+=== Deceptive Agent (Agent D) <deceptive-agent>
+The deceptive agent's state at time $t$ is its position $x_D (t) in cal(W)_"free"$. Agent D has a finite set of candidate goals $cal(G)_D = {g_1, g_2, dots, g_M} subset cal(W)_"free"$ known to both agents, and a true goal $g^* in cal(G)_D$ that is hidden from Agent I. The agent executes a trajectory $xi_D : [0, T] -> cal(W)_"free"$ satisfying the boundary conditions $xi_D (0) = x_(D,0)$ and $xi_D (T) = g^*$, where $x_(D,0)$ is the initial position and $T$ is the time horizon. The trajectory is subject to kinodynamic constraints including velocity bounds and acceleration limits, which we denote generically as $xi_D in Xi_D$, where $Xi_D$ is the set of kinodynamically feasible trajectories.
+
+=== Interceptor Agent (Agent I) <interceptor-agent>
+The interceptor agent's state at time $t$ is its position $x_I (t) in cal(W)_"free"$. Agent I starts at position $x_(I,0)$ and executes a trajectory $xi_I : [0, T] -> cal(W)_"free"$ with $xi_I (0) = x_(I,0)$. The objective of Agent I is to infer the true goal $g^*$ from observations of Agent D's partial trajectory and plan an interception trajectory to reach the predicted goal before Agent D. Agent I's trajectory is also subject to kinodynamic constraints $xi_I in Xi_I$, which may differ from those of Agent D.
+
+=== Observer Model <observer-model>
+Agent I maintains a belief distribution over the candidate goals, represented as $b_t : cal(G)_D -> [0,1]$ where $sum_(g in cal(G)_D) b_t (g) = 1$. This belief is updated incrementally based on observations of the partial trajectory $xi_D [0,t]$. The belief update mechanism will be specified in detail in the following subsections.
+
+== Deceptive Motion Planning Problem <deceptive-motion-planning-problem>
+
+The deceptive agent seeks to generate a trajectory $xi_D^*$ that satisfies three competing objectives: (1) reach the true goal $g^*$, (2) minimize path cost, and (3) maximize the observer's uncertainty about $g^*$. This multi-objective optimization problem is formalized as
+
+$
+    & xi_D^* = \
+    & arg min_(xi_D in Xi_D) [ alpha dot J_"path" (xi_D) + (1-alpha) dot J_"deception" (xi_D) ]
+$
+
+where $J_"path" (xi_D)$ is the path cost, $J_"deception" (xi_D)$ quantifies the "revealingness" of the trajectory (i.e., how easily an observer can infer the true goal), and $alpha in [0,1]$ is a weighting parameter that balances path optimality against deception.
+
+The path cost is typically defined as the total path length or control effort:
+
+$
+    J_"path" (xi_D) = integral_0^T ||dot(xi)_D (t)|| dif t
+$
+
+The deception cost is more subtle and can be formulated in multiple ways. Following the Adversarial RRT\* framework @nichols2022adversarial, we employ a learned classifier $f_theta$ (specifically, a recurrent neural network) as a surrogate observer. The classifier maps partial trajectories to probability distributions over goals: $f_theta : xi_D |-> Delta(cal(G)_D)$, where $Delta(cal(G)_D)$ denotes the probability simplex over $cal(G)_D$. The deception cost can then be defined as the negative entropy of the classifier's output:
+
+$
+    J_"deception" (xi_D) = -H(f_theta (xi_D))
+$
+
+where $H(p) = -sum_(g in cal(G)_D) p(g) log p(g)$ is the Shannon entropy. High entropy corresponds to high uncertainty (good deception), so minimizing $-H$ is equivalent to maximizing uncertainty. Alternatively, the deception cost can be defined directly as the classifier's accuracy:
+
+$
+    J_"deception" (xi_D) = P_theta ("correct goal" | xi_D) = f_theta (xi_D)(g^*)
+$
+
+An alternative formulation based on probabilistic goal recognition @xu2020single @xu2019goal defines the deception cost as the negative goal ambiguity:
+
+$
+    J_"deception" (xi_D) = -sum_(g in cal(G)_D) P(g | xi_D) log P(g | xi_D)
+$
+
+where the posterior probability $P(g | xi_D)$ is computed using a probabilistic goal recognition framework that models the likelihood of trajectories under different goal hypotheses.
+
+The optimization problem is subject to the following constraints:
+
+- Collision avoidance: $xi_D (t) in cal(W)_"free"$ for all $t in [0,T]$
+- Kinodynamic feasibility: $xi_D in Xi_D$ (velocity and acceleration limits)
+- Boundary conditions: $xi_D (0) = x_(D,0)$ and $xi_D (T) = g^*$
+
+=== Solution Method <solution-method>
+We employ Adversarial RRT\* @nichols2022adversarial, a sampling-based motion planner that extends the RRT\* algorithm by incorporating the deception cost $J_"deception"$ into the cost function used for tree rewiring and path selection. The planner iteratively samples configurations, extends the search tree, and evaluates candidate paths using the combined cost $alpha J_"path" + (1-alpha) J_"deception"$, producing trajectories that balance path optimality with unpredictability.
+
+== Goal Inference and Interception Problem <goal-inference-and-interception>
+
+The interceptor agent must solve two interrelated subproblems:
+1. Infer the deceptive agent's true goal $g^*$ from observations of the partial trajectory $xi_D [0,t]$
+2. Plan an interception trajectory to reach the predicted goal before Agent D.
+
+=== Goal Inference Subproblem <goal-inference-subproblem>
+The goal inference problem is addressed through a combination of offline learning and online belief updates.
+
+==== Inverse Reinforcement Learning (IRL) Phase <irl-phase>
+Prior to runtime, Agent I uses inverse reinforcement learning to recover a behavioral model of Agent D from historical trajectory data. The IRL problem seeks to recover a reward (or cost) function $R_D (s,a)$ such that the observed trajectories are approximately optimal under this reward function. Following @zeng2023recognition, we model the deceptive agent's behavior by learning a reward function that captures both path efficiency and deception, enabling Agent I to predict likely future actions given a goal hypothesis.
+
+==== Online Belief Update <online-belief-update>
+During execution, Agent I maintains and updates the belief distribution $b_t (g)$ over candidate goals using Bayes' rule:
+
+$
+    b_(t+1) (g) prop P(xi_D [t, t+1] | g, xi_D [0,t]) dot b_t (g)
+$
+
+where $P(xi_D [t, t+1] | g, xi_D [0,t])$ is the likelihood of the observed trajectory segment given goal hypothesis $g$ and the trajectory history. This likelihood is computed using the behavioral model learned via IRL.
+
+==== Particle Filter Implementation <particle-filter-implementation>
+Following @tastan2012learning, we employ a particle filter to maintain and propagate the belief distribution. Each particle represents a hypothesis about the true goal and the agent's current state. The particle filter alternates between a prediction step (using the learned motion model to propagate particles forward) and an update step (re-weighting particles based on observed trajectory segments).
+
+The predicted goal at time $t$ is obtained by selecting the maximum a posteriori (MAP) estimate:
+
+$
+    hat(g)(t) = arg max_(g in cal(G)_D) b_t (g)
+$
+
+=== Interception Planning Subproblem <interception-planning-subproblem>
+Given the predicted goal $hat(g)(t)$, Agent I must plan a trajectory to intercept Agent D. The interception planning problem is formulated as:
+
+$
+    xi_I^* = arg min_(xi_I in Xi_I) T_"intercept"
+$
+
+subject to the constraint that Agent I reaches the predicted goal $hat(g)$ before Agent D. However, because the prediction $hat(g)(t)$ evolves over time as new observations are incorporated, a static plan is insufficient.
+
+==== Game-Theoretic Model Predictive Control (MPC) <game-theoretic-mpc>
+Following @lecleach2021lucidgames and @espinoza2022deep, we employ a receding-horizon game-theoretic planner. At each time step $t$, Agent I solves the finite-horizon optimization problem:
+
+$
+    min_(xi_I [t, t+H]) J_I (xi_I, hat(xi)_D)
+$
+
+where $H$ is the prediction horizon and $hat(xi)_D$ is the predicted future trajectory of Agent D, computed by forward-simulating the learned behavioral model conditioned on the current belief distribution. The cost function $J_I$ is defined as:
+
+$
+    & J_I (xi_I, hat(xi)_D) = \
+    & ||xi_I (T_"intercept") - hat(g)||^2 + integral_t^(t+H) ||dot(xi)_I (tau)||^2 dif tau
+$
+
+where the first term penalizes distance to the predicted goal and the second term penalizes control effort. The solution yields a planned trajectory for the next $H$ time steps, of which only the first segment is executed before replanning at the next time step.
+
+==== Replanning <replanning>
+The MPC framework enables real-time replanning. As Agent I observes new segments of Agent D's trajectory, the belief distribution $b_t (g)$ is updated, the predicted goal $hat(g)(t)$ may change, and the interception plan is recomputed accordingly.
+
+== Adversarial Game Formulation <adversarial-game-formulation>
+
+The interaction between the deceptive agent and the interceptor can be formalized as a two-player dynamic game with asymmetric information.
+
+=== Players and Objectives <players-and-objectives>
+- Player 1 (Agent D): Minimizes $J_D = alpha J_"path" + (1-alpha) J_"deception"$
+- Player 2 (Agent I): Minimizes $J_I$ (interception cost, including time-to-intercept and control effort)
+
+=== Information Structure <information-structure>
+This is an asymmetric information game. Agent D has complete information: it knows the true goal $g^*$, the candidate goal set $cal(G)_D$, and can observe Agent I's current state $x_I (t)$. In contrast, Agent I has incomplete information: it knows the candidate goal set $cal(G)_D$ and can observe the partial trajectory $xi_D [0,t]$, but does not know the true goal $g^*$. Agent I must infer $g^*$ from observations.
+
+=== Solution Concept <solution-concept>
+Due to the information asymmetry and the sequential nature of the interaction, this problem does not admit a standard Nash equilibrium solution. Instead, it is more appropriately modeled as a Stackelberg game (leader-follower game), in which Agent D (the leader) plans its trajectory anticipating that Agent I (the follower) will respond optimally given its observations. However, Agent D must account for the fact that Agent I does not know $g^*$ and will update its beliefs and replan based on observed trajectory segments.
+
+==== Adversarial Evaluation Framework <adversarial-evaluation-framework>
+Rather than solving analytically for an equilibrium, we adopt an empirical adversarial evaluation framework. We implement Adversarial RRT\* for Agent D and the IRL-based particle filter with game-theoretic MPC for Agent I, then evaluate their performance through simulation. Key performance metrics include:
+
+- For Agent D: Observer classification accuracy at the time of goal completion, $P_theta (g^* | xi_D)$, and path length ratio $J_"path" (xi_D^*) \/ J_"path" (xi_D^"opt")$ where $xi_D^"opt"$ is the optimal (shortest) path
+- For Agent I: Goal inference accuracy $bb(1)[hat(g)(T) = g^*]$ and time-to-intercept relative to Agent D's arrival time
+- Overall: Success rate for each agent—does Agent D successfully reach $g^*$ before being intercepted, or does Agent I successfully intercept Agent D?
+
+==== Interaction Dynamics <interaction-dynamics>
+The game proceeds as follows. Agent D generates a deceptive trajectory using Adversarial RRT\*. Agent I observes the trajectory incrementally and updates its belief distribution over goals using the IRL-learned behavioral model and particle filtering. Based on the updated belief, Agent I replans its interception trajectory using game-theoretic MPC. This cycle continues until one of two termination conditions is met: (a) Agent D reaches the true goal $g^*$, or (b) Agent I successfully intercepts Agent D (i.e., $||x_I (t) - x_D (t)|| < epsilon_"intercept"$ for some small threshold $epsilon_"intercept"$).
+
+#set text(fill: black)
 = Methodology <methodology>
 
-// TODO: make sure to pick the exact methods (specific algorithms and implementation processes for each agent) that you plan to use
 == Overview <overview>
 
 The project is implemented in Python, chosen for its extensive ecosystem of machine learning and scientific computing libraries. In particular, we use JAX (via the Equinox library) as the primary framework for differentiable programming, automatic differentiation, and GPU-accelerated computation.
@@ -84,6 +227,8 @@ The project is implemented in Python, chosen for its extensive ecosystem of mach
 The core of the project involves two competing agents in a continuous two-dimensional workspace. The first agent employs a deceptive motion planning algorithm building on Adversarial RRT\* @nichols2022adversarial, which augments the sampling-based RRT\* planner with a learned deception cost to generate trajectories that minimize an observer's ability to infer the agent's true goal. Entropy-based deceptive planning techniques @xu2020single @xu2019goal inform the design of the deception objective. The second agent utilizes an identification and interception strategy, drawing on techniques from inverse reinforcement learning and game-theoretic prediction @zeng2023recognition @tastan2012learning @lecleach2021lucidgames, with the objective of recognizing the deceptive agent's true goal and planning an intercept trajectory in real time. The approach of coupling adversary identification with reactive planning follows the framework proposed by Netter and Vamvoudakis~@netter2024motion, adapted to the adversarial evaluation setting. Both agents thus operate well beyond basic shortest-path planning: the deceptive agent layers a learned deception metric on top of RRT\*, while the interceptor combines online goal inference with reactive replanning.
 
 Of note, despite several of the referenced algorithms being originally developed for three-dimensional environments (e.g., first-person shooter game maps @tastan2012learning), we work in a continuous two-dimensional workspace for ease of development and in the interest of completing the project within the semester. The simulation environment is custom-built in Python, providing full control over the experimental setup and enabling systematic evaluation of each algorithm's performance under varying conditions.
+
+#set text(fill: blue)
 
 // TODO: please document current progress on your implementation (what you have done so far/are currently doing)
 == Implementation <implementation>
