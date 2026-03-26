@@ -7,6 +7,7 @@ This document specifies all data formats, schemas, and file structures used in t
 ## Overview
 
 The system handles three categories of data:
+
 1. **Training Data**: Datasets for training RNN observer and IRL models (offline)
 2. **Configuration Data**: YAML files defining experiment parameters
 3. **Output Data**: Generated figures, trajectories, and metrics (results)
@@ -20,6 +21,7 @@ The system handles three categories of data:
 **Format**: HDF5 file or pickled dictionary
 
 **Schema**:
+
 ```python
 {
     'trajectories': List[Array],     # Length N, each entry is (T_i, 2)
@@ -36,6 +38,7 @@ The system handles three categories of data:
 ```
 
 **Array Shapes**:
+
 - `trajectories[i]`: Variable length (T_i, 2) where T_i is number of timesteps for trajectory i
 - `goals`: (N, 2) where N is total number of trajectories
 - `goal_ids`: (N,) where values are in [0, M-1] and M is number of unique goals
@@ -43,6 +46,7 @@ The system handles three categories of data:
 **File Naming Convention**: `observer_train_<workspace_id>_<num_traj>.h5`
 
 **Example Generation** (pseudocode):
+
 ```python
 # Generate 1000 optimal trajectories (200 per goal)
 dataset = {
@@ -66,6 +70,7 @@ h5py.File('observer_train_workspace1_1000.h5', 'w').create_dataset(...)
 ```
 
 **Data Augmentation**:
+
 - **Noise injection**: Add Gaussian noise to positions (σ = 0.05)
 - **Time warping**: Resample trajectories at different rates
 - **Partial truncation**: Use varying completion percentages (10%-90%)
@@ -78,6 +83,7 @@ h5py.File('observer_train_workspace1_1000.h5', 'w').create_dataset(...)
 **Format**: HDF5 file or pickled dictionary
 
 **Schema**:
+
 ```python
 {
     'demonstrations': List[Dict],    # Length N demonstrations
@@ -101,6 +107,7 @@ h5py.File('observer_train_workspace1_1000.h5', 'w').create_dataset(...)
 ```
 
 **Array Shapes**:
+
 - `trajectory`: (T, 2) where T varies per demonstration
 - `velocities`: (T, 2)
 - `actions`: (T-1, 2) discrete control actions
@@ -108,6 +115,7 @@ h5py.File('observer_train_workspace1_1000.h5', 'w').create_dataset(...)
 **File Naming Convention**: `irl_demonstrations_<agent_type>_<num_demos>.h5`
 
 **Example Structure**:
+
 ```python
 demonstrations = [
     {
@@ -131,104 +139,107 @@ demonstrations = [
 **File Format**: YAML
 
 **Schema**:
+
 ```yaml
 # Workspace configuration
 workspace:
-  bounds: [[0.0, 10.0], [0.0, 10.0]]  # [[x_min, x_max], [y_min, y_max]]
-  obstacles:
-    - type: circle
-      center: [5.0, 5.0]
-      radius: 1.0
-    - type: circle
-      center: [7.0, 3.0]
-      radius: 0.8
-    - type: polygon
-      vertices: [[2.0, 2.0], [3.0, 2.0], [3.0, 3.0], [2.0, 3.0]]
+    bounds: [[0.0, 10.0], [0.0, 10.0]] # [[x_min, x_max], [y_min, y_max]]
+    obstacles:
+        - type: circle
+          center: [5.0, 5.0]
+          radius: 1.0
+        - type: circle
+          center: [7.0, 3.0]
+          radius: 0.8
+        - type: polygon
+          vertices: [[2.0, 2.0], [3.0, 2.0], [3.0, 3.0], [2.0, 3.0]]
 
 # Deceptive agent configuration
 deceptive_agent:
-  initial_position: [1.0, 1.0]
-  true_goal: [9.0, 9.0]
-  candidate_goals:  # Must include true_goal
-    - [9.0, 9.0]
-    - [9.0, 1.0]
-    - [1.0, 9.0]
+    initial_position: [1.0, 1.0]
+    true_goal: [9.0, 9.0]
+    candidate_goals: # Must include true_goal
+        - [9.0, 9.0]
+        - [9.0, 1.0]
+        - [1.0, 9.0]
 
-  # Adversarial RRT* parameters
-  planner:
-    deception_weight: 0.3           # α ∈ [0, 1], 0=pure path opt, 1=pure deception
-    max_iterations: 5000
-    step_size: 0.5
-    goal_radius: 0.5                # Goal region radius
-    rewiring_radius: 2.0
-    goal_bias_probability: 0.1      # Probability of sampling near goal
+    # Adversarial RRT* parameters
+    planner:
+        deception_weight: 0.3 # α ∈ [0, 1], 0=pure path opt, 1=pure deception
+        max_iterations: 5000
+        step_size: 0.5
+        goal_radius: 0.5 # Goal region radius
+        rewiring_radius: 2.0
+        goal_bias_probability: 0.1 # Probability of sampling near goal
 
-  # Kinodynamic constraints
-  kinematics:
-    max_velocity: 2.0
-    max_acceleration: 1.0
+    # Kinodynamic constraints
+    kinematics:
+        max_velocity: 2.0
+        max_acceleration: 1.0
 
-  # Observer network
-  observer:
-    checkpoint_path: "models/observer_rnn.eqx"
-    deception_cost_method: "entropy"  # "entropy" or "accuracy"
+    # Observer network
+    observer:
+        checkpoint_path: "models/observer_rnn.eqx"
+        deception_cost_method: "entropy" # "entropy" or "accuracy"
 
 # Interceptor agent configuration
 interceptor_agent:
-  initial_position: [9.0, 1.0]
-  candidate_goals:  # Same as deceptive agent
-    - [9.0, 9.0]
-    - [9.0, 1.0]
-    - [1.0, 9.0]
+    initial_position: [9.0, 1.0]
+    candidate_goals: # Same as deceptive agent
+        - [9.0, 9.0]
+        - [9.0, 1.0]
+        - [1.0, 9.0]
 
-  # IRL model
-  irl:
-    checkpoint_path: "models/irl_reward.eqx"
+    # IRL model
+    irl:
+        checkpoint_path: "models/irl_reward.eqx"
 
-  # Particle filter parameters
-  particle_filter:
-    num_particles: 1000
-    resample_threshold: 0.5         # Effective sample size ratio for resampling
-    motion_noise_std: 0.1           # Process noise standard deviation
+    # Particle filter parameters
+    particle_filter:
+        num_particles: 1000
+        resample_threshold: 0.5 # Effective sample size ratio for resampling
+        motion_noise_std: 0.1 # Process noise standard deviation
 
-  # MPC parameters
-  mpc:
-    horizon: 20                     # Planning horizon (timesteps)
-    control_weight: 0.01            # λ_u in cost function
-    optimization_method: "lbfgs"    # "lbfgs", "adam", or "gradient_descent"
-    max_iterations: 100
+    # MPC parameters
+    mpc:
+        horizon: 20 # Planning horizon (timesteps)
+        control_weight: 0.01 # λ_u in cost function
+        optimization_method: "lbfgs" # "lbfgs", "adam", or "gradient_descent"
+        max_iterations: 100
 
-  # Kinodynamic constraints
-  kinematics:
-    max_velocity: 2.5
-    max_acceleration: 1.5
+    # Kinodynamic constraints
+    kinematics:
+        max_velocity: 2.5
+        max_acceleration: 1.5
 
 # Simulation parameters
 simulation:
-  timestep: 0.1                     # Δt for discrete time simulation
-  max_time: 100.0                   # Maximum simulation time
-  intercept_threshold: 0.5          # Distance threshold for interception
-  random_seed: 42
+    timestep: 0.1 # Δt for discrete time simulation
+    max_time: 100.0 # Maximum simulation time
+    intercept_threshold: 0.5 # Distance threshold for interception
+    random_seed: 42
 
 # Output configuration
 outputs:
-  save_figures: true
-  save_trajectories: true
-  save_metrics: true
-  figure_format: "png"              # "png", "pdf", or "svg"
-  figure_dpi: 300
-  output_dir: "outputs"             # Relative to project root
+    save_figures: true
+    save_trajectories: true
+    save_metrics: true
+    figure_format: "png" # "png", "pdf", or "svg"
+    figure_dpi: 300
+    output_dir: "outputs" # Relative to project root
 ```
 
 **Type Specifications**:
+
 - `bounds`: List[List[float]], shape (2, 2)
 - `obstacles`: List of obstacle dicts
-  - Circle: `{type: "circle", center: [x, y], radius: r}`
-  - Polygon: `{type: "polygon", vertices: [[x1, y1], [x2, y2], ...]}`
+    - Circle: `{type: "circle", center: [x, y], radius: r}`
+    - Polygon: `{type: "polygon", vertices: [[x1, y1], [x2, y2], ...]}`
 - `initial_position`, `true_goal`, `candidate_goals`: List of [x, y] floats
 - All numeric parameters: float or int as appropriate
 
 **Validation Rules**:
+
 1. `deceptive_agent.true_goal` must be in `deceptive_agent.candidate_goals`
 2. `deceptive_agent.candidate_goals` must equal `interceptor_agent.candidate_goals`
 3. `deception_weight` must be in [0, 1]
@@ -242,22 +253,23 @@ outputs:
 **Example Config Files**:
 
 `experiment_simple_obstacle.yaml`:
+
 ```yaml
 workspace:
-  bounds: [[0, 10], [0, 10]]
-  obstacles:
-    - type: circle
-      center: [5, 5]
-      radius: 1.5
+    bounds: [[0, 10], [0, 10]]
+    obstacles:
+        - type: circle
+          center: [5, 5]
+          radius: 1.5
 
 deceptive_agent:
-  initial_position: [1, 1]
-  true_goal: [9, 9]
-  candidate_goals: [[9, 9], [9, 1], [1, 9]]
-  planner:
-    deception_weight: 0.4
-    max_iterations: 3000
-  # ... rest of config
+    initial_position: [1, 1]
+    true_goal: [9, 9]
+    candidate_goals: [[9, 9], [9, 1], [1, 9]]
+    planner:
+        deception_weight: 0.4
+        max_iterations: 3000
+    # ... rest of config
 ```
 
 ## Output Data Formats
@@ -269,6 +281,7 @@ deceptive_agent:
 **Format**: CSV or text file
 
 **Schema** (CSV):
+
 ```csv
 agent,time,x,y,vx,vy
 Agent_D,0.0,1.0,1.0,0.0,0.0
@@ -281,6 +294,7 @@ Agent_I,0.1,8.95,1.05,-0.5,0.5
 ```
 
 **Columns**:
+
 - `agent`: "Agent_D" or "Agent_I"
 - `time`: float (seconds)
 - `x`, `y`: float (position)
@@ -289,6 +303,7 @@ Agent_I,0.1,8.95,1.05,-0.5,0.5
 **File Naming Convention**: `trajectories_<experiment_name>_<timestamp>.csv`
 
 **Alternative Format** (NumPy):
+
 ```python
 {
     'Agent_D': {
@@ -313,6 +328,7 @@ Saved as: `trajectories_<experiment_name>.npz`
 **Format**: CSV
 
 **Schema**:
+
 ```csv
 metric,value
 winner,Agent_D
@@ -328,6 +344,7 @@ time_to_interception,inf
 ```
 
 **Metrics Definitions**:
+
 - `winner`: "Agent_D", "Agent_I", or "timeout"
 - `completion_time`: Time when simulation ended (float)
 - `observer_accuracy_final`: P(true_goal | final_trajectory)
@@ -348,6 +365,7 @@ time_to_interception,inf
 **Format**: CSV
 
 **Schema**:
+
 ```csv
 time,goal_0,goal_1,goal_2,entropy
 0.0,0.333,0.333,0.333,1.099
@@ -358,6 +376,7 @@ time,goal_0,goal_1,goal_2,entropy
 ```
 
 **Columns**:
+
 - `time`: float (seconds)
 - `goal_0`, `goal_1`, ..., `goal_N-1`: Belief probability for each candidate goal
 - `entropy`: Shannon entropy H(b_t)
@@ -371,6 +390,7 @@ time,goal_0,goal_1,goal_2,entropy
 #### Figure 1: Workspace with Trajectories
 
 **Content**:
+
 - 2D workspace bounds
 - Obstacles (circles, polygons)
 - Agent D trajectory (blue line)
@@ -390,6 +410,7 @@ time,goal_0,goal_1,goal_2,entropy
 #### Figure 2: Belief Distribution Evolution
 
 **Content**:
+
 - Stacked area chart or line plot
 - X-axis: Time (seconds)
 - Y-axis: Belief probability [0, 1]
@@ -405,10 +426,11 @@ time,goal_0,goal_1,goal_2,entropy
 #### Figure 3: Metrics Over Time
 
 **Content**:
+
 - Multi-panel plot:
-  - Panel 1: Distance between agents vs. time
-  - Panel 2: Observer accuracy vs. time (if evaluated at multiple points)
-  - Panel 3: Belief entropy vs. time
+    - Panel 1: Distance between agents vs. time
+    - Panel 2: Observer accuracy vs. time (if evaluated at multiple points)
+    - Panel 3: Belief entropy vs. time
 
 **Format**: PNG, PDF, or SVG
 
@@ -452,6 +474,7 @@ data/
 ## Pytree Structures (JAX)
 
 ### AgentState Pytree
+
 ```python
 from typing import NamedTuple
 import jax.numpy as jnp
@@ -464,6 +487,7 @@ class AgentState(NamedTuple):
 ```
 
 ### Trajectory Pytree
+
 ```python
 class Trajectory(NamedTuple):
     times: jnp.ndarray      # (T,)
@@ -482,6 +506,7 @@ traj_scaled = jax.tree_map(lambda x: 2 * x, traj)
 ```
 
 ### Workspace Pytree
+
 ```python
 @dataclass
 class Workspace:
@@ -508,6 +533,7 @@ register_pytree_node(Workspace, workspace_flatten, workspace_unflatten)
 ## Serialization and Deserialization
 
 ### Saving Equinox Models
+
 ```python
 import equinox as eqx
 
@@ -520,6 +546,7 @@ loaded_observer = eqx.tree_deserialise_leaves("models/observer_rnn.eqx", observe
 ```
 
 ### Saving/Loading Trajectories (NumPy)
+
 ```python
 # Save
 jnp.savez(
@@ -542,6 +569,7 @@ traj_D = Trajectory(
 ```
 
 ### Loading YAML Configuration
+
 ```python
 import yaml
 from src.simulation.config import SimulationConfig
@@ -556,6 +584,7 @@ config = SimulationConfig.from_dict(config_dict)
 ## Data Validation
 
 ### Configuration Validation
+
 ```python
 def validate_workspace(workspace_config: Dict) -> bool:
     """Validate workspace configuration."""
@@ -577,6 +606,7 @@ def validate_workspace(workspace_config: Dict) -> bool:
 ```
 
 ### Training Data Validation
+
 ```python
 def validate_trajectory_dataset(dataset: Dict) -> bool:
     """Validate RNN observer training dataset."""
@@ -600,6 +630,7 @@ def validate_trajectory_dataset(dataset: Dict) -> bool:
 ## Example Usage
 
 ### Complete Workflow Example
+
 ```python
 # 1. Load configuration
 config = load_config("data/configs/experiment_simple.yaml")

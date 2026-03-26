@@ -51,10 +51,12 @@ src/
 
 ### `src/deceptive/` - Deceptive Agent Package
 
-#### `planner.py` - Adversarial RRT* Planner
-**Responsibility**: Implements Adversarial RRT* algorithm with deception cost integration.
+#### `planner.py` - Adversarial RRT\* Planner
+
+**Responsibility**: Implements Adversarial RRT\* algorithm with deception cost integration.
 
 **Public API**:
+
 ```python
 def adversarial_rrt_star(
     start: Array,                    # (2,) starting position
@@ -72,9 +74,11 @@ def adversarial_rrt_star(
 **Dependencies**: `src/deceptive/{observer, deception_cost, tree}`, `src/shared/{workspace, collision, trajectory}`
 
 #### `observer.py` - RNN Surrogate Observer
+
 **Responsibility**: Neural network that classifies partial trajectories to predict goals.
 
 **Public API**:
+
 ```python
 class TrajectoryClassifier(eqx.Module):
     """RNN-based trajectory classifier for goal prediction."""
@@ -99,9 +103,11 @@ def train_observer(
 **Dependencies**: Equinox, Optax, `src/shared/trajectory`
 
 #### `deception_cost.py` - Deception Cost Evaluator
+
 **Responsibility**: Computes deception cost from observer predictions.
 
 **Public API**:
+
 ```python
 def entropy_based_deception_cost(
     goal_probs: Array,               # (num_goals,)
@@ -128,10 +134,12 @@ def evaluate_deception_cost(
 
 **Dependencies**: `src/deceptive/observer`, `src/shared/trajectory`
 
-#### `tree.py` - RRT* Tree Data Structure
-**Responsibility**: Manages RRT* search tree structure.
+#### `tree.py` - RRT\* Tree Data Structure
+
+**Responsibility**: Manages RRT\* search tree structure.
 
 **Public API**:
+
 ```python
 @dataclass
 class RRTNode:
@@ -170,9 +178,11 @@ class RRTTree:
 ### `src/interceptor/` - Interceptor Agent Package
 
 #### `irl.py` - Inverse Reinforcement Learning
+
 **Responsibility**: Learn behavioral model of deceptive agent from demonstrations.
 
 **Public API**:
+
 ```python
 class LearnedRewardFunction(eqx.Module):
     """Neural network parameterization of learned reward."""
@@ -204,9 +214,11 @@ def predict_trajectory(
 **Dependencies**: Equinox, Optax, `src/shared/{trajectory, workspace}`
 
 #### `particle_filter.py` - Particle Filter
+
 **Responsibility**: Maintain belief distribution over goals using particle filtering.
 
 **Public API**:
+
 ```python
 @dataclass
 class Particle:
@@ -250,9 +262,11 @@ class ParticleFilter:
 **Dependencies**: `src/interceptor/irl`, `src/shared/trajectory`
 
 #### `mpc.py` - Game-Theoretic MPC
+
 **Responsibility**: Receding-horizon optimization for interception planning.
 
 **Public API**:
+
 ```python
 def game_theoretic_mpc(
     current_state: Array,            # (2,) current position
@@ -278,9 +292,11 @@ def solve_mpc_optimization(
 **Dependencies**: `src/interceptor/irl`, `src/shared/{trajectory, kinematics}`
 
 #### `belief_update.py` - Belief Update Utilities
+
 **Responsibility**: Bayesian belief update functions.
 
 **Public API**:
+
 ```python
 def bayesian_update(
     prior: Array,                    # (num_goals,)
@@ -303,9 +319,11 @@ def compute_likelihood(
 ### `src/shared/` - Shared Components Package
 
 #### `workspace.py` - 2D Workspace Environment
+
 **Responsibility**: Represent 2D workspace with obstacles.
 
 **Public API**:
+
 ```python
 @dataclass
 class CircleObstacle:
@@ -333,9 +351,11 @@ def is_in_workspace(position: Array, workspace: Workspace) -> bool:
 **Dependencies**: `src/shared/geometry`
 
 #### `trajectory.py` - Trajectory Representation
+
 **Responsibility**: Trajectory data structures and operations.
 
 **Public API**:
+
 ```python
 @dataclass
 class Trajectory:
@@ -364,9 +384,11 @@ def get_partial_trajectory(traj: Trajectory, t_end: float) -> Trajectory:
 **Dependencies**: None (only JAX and standard library)
 
 #### `collision.py` - Collision Detection
+
 **Responsibility**: Collision checking between agents and obstacles.
 
 **Public API**:
+
 ```python
 @jax.jit
 def point_in_circle(
@@ -405,9 +427,11 @@ def batch_collision_check(
 **Dependencies**: `src/shared/{workspace, geometry}`
 
 #### `kinematics.py` - Kinodynamic Constraints
+
 **Responsibility**: Enforce kinodynamic constraints on trajectories.
 
 **Public API**:
+
 ```python
 @dataclass
 class KinematicConstraints:
@@ -442,9 +466,11 @@ def integrate_motion(
 **Dependencies**: None
 
 #### `geometry.py` - Geometric Utilities
+
 **Responsibility**: Common geometric operations.
 
 **Public API**:
+
 ```python
 @jax.jit
 def euclidean_distance(p1: Array, p2: Array) -> float:
@@ -480,9 +506,11 @@ def point_to_segment_distance(
 ### `src/simulation/` - Simulation Framework Package
 
 #### `controller.py` - Simulation Controller
+
 **Responsibility**: Main game loop orchestrating agent interaction.
 
 **Public API**:
+
 ```python
 @dataclass
 class SimulationResult:
@@ -501,9 +529,11 @@ def run_simulation(config: SimulationConfig, key: PRNGKey) -> SimulationResult:
 **Dependencies**: All packages (`deceptive`, `interceptor`, `shared`)
 
 #### `config.py` - Configuration Management
+
 **Responsibility**: Load and validate YAML configuration files.
 
 **Public API**:
+
 ```python
 @dataclass
 class SimulationConfig:
@@ -525,9 +555,11 @@ def validate_config(config: SimulationConfig) -> bool:
 **Dependencies**: `src/shared/workspace`
 
 #### `metrics.py` - Performance Metrics
+
 **Responsibility**: Compute and track performance metrics.
 
 **Public API**:
+
 ```python
 def compute_observer_accuracy(
     observer_net: TrajectoryClassifier,
@@ -554,9 +586,11 @@ def compute_belief_entropy_over_time(
 **Dependencies**: `src/deceptive/observer`, `src/shared/trajectory`
 
 #### `visualization.py` - Visualization and Output
+
 **Responsibility**: Generate plots and save outputs.
 
 **Public API**:
+
 ```python
 def plot_workspace_with_trajectories(
     workspace: Workspace,
@@ -588,9 +622,11 @@ def save_trajectories(
 ### `src/data/` - Data Handling Package
 
 #### `schemas.py` - Data Structure Definitions
+
 **Responsibility**: Define pytree structures for data.
 
 **Public API**:
+
 ```python
 # Register pytree structures
 @jax.tree_util.register_pytree_node_class
@@ -603,9 +639,11 @@ class TrajectoryDataset:
 **Dependencies**: None
 
 #### `loaders.py` - Data Loaders
+
 **Responsibility**: Load training data from disk.
 
 **Public API**:
+
 ```python
 def load_trajectory_dataset(path: str) -> TrajectoryDataset:
     """Load trajectory dataset from HDF5 or NumPy file."""
@@ -615,9 +653,11 @@ def load_trajectory_dataset(path: str) -> TrajectoryDataset:
 **Dependencies**: `src/data/schemas`
 
 #### `generators.py` - Synthetic Data Generation
+
 **Responsibility**: Generate synthetic training data.
 
 **Public API**:
+
 ```python
 def generate_optimal_trajectories(
     workspace: Workspace,
@@ -660,15 +700,18 @@ from src.interceptor.irl import ...     # agents cannot import from each other
 ### Public vs. Private APIs
 
 **Public APIs** (exported in `__init__.py`):
+
 - Functions/classes intended for use by other packages
 - Stable interfaces (minimize breaking changes)
 
 **Private implementation** (not exported):
+
 - Helper functions with leading underscore
 - Internal data structures
 - Implementation details
 
 Example `src/deceptive/__init__.py`:
+
 ```python
 # Public API
 from .planner import adversarial_rrt_star
@@ -683,6 +726,7 @@ from .deception_cost import evaluate_deception_cost
 ## Package Initialization Files
 
 ### `src/__init__.py`
+
 ```python
 """Adversarial motion planning system."""
 
@@ -697,6 +741,7 @@ from . import data
 ```
 
 ### `src/deceptive/__init__.py`
+
 ```python
 """Deceptive agent components (Agent D)."""
 
@@ -713,6 +758,7 @@ __all__ = [
 ```
 
 ### `src/interceptor/__init__.py`
+
 ```python
 """Interceptor agent components (Agent I)."""
 
@@ -733,6 +779,7 @@ __all__ = [
 ```
 
 ### `src/shared/__init__.py`
+
 ```python
 """Shared components used by both agents."""
 
@@ -766,6 +813,7 @@ __all__ = [
 ```
 
 ### `src/simulation/__init__.py`
+
 ```python
 """Simulation framework for adversarial evaluation."""
 
@@ -797,6 +845,7 @@ __all__ = [
 ```
 
 ### `src/data/__init__.py`
+
 ```python
 """Data handling for training and experiments."""
 

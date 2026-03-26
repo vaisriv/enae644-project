@@ -7,7 +7,8 @@ This document provides a high-level overview of the adversarial motion planning 
 ## System Context
 
 This is an ENAE644 term project implementing algorithms from:
-- Deceptive motion planning (Adversarial RRT* with learned deception costs)
+
+- Deceptive motion planning (Adversarial RRT\* with learned deception costs)
 - Goal identification and interception (IRL + particle filtering + game-theoretic MPC)
 
 The system evaluates these algorithms in direct adversarial competition rather than in isolation.
@@ -81,30 +82,34 @@ The system evaluates these algorithms in direct adversarial competition rather t
 ## Component Hierarchy
 
 ### Top Level: Simulation Controller
+
 - **Package**: `src/simulation/`
 - **Responsibility**: Orchestrates the adversarial interaction between agents
 - **Key Modules**:
-  - `controller.py`: Main game loop
-  - `config.py`: Configuration loading and validation
-  - `metrics.py`: Performance metric computation
-  - `visualization.py`: Plotting and output generation
+    - `controller.py`: Main game loop
+    - `config.py`: Configuration loading and validation
+    - `metrics.py`: Performance metric computation
+    - `visualization.py`: Plotting and output generation
 
 ### Agent Level: Deceptive Agent & Interceptor Agent
+
 - **Packages**: `src/deceptive/`, `src/interceptor/`
 - **Responsibility**: Implement agent-specific planning and learning algorithms
 - **Interaction**: Agents are independent; interaction is mediated by simulation controller
 
 ### Foundation Level: Shared Components
+
 - **Package**: `src/shared/`
 - **Responsibility**: Common functionality used by both agents
 - **Key Modules**:
-  - `workspace.py`: 2D environment with obstacles
-  - `trajectory.py`: Trajectory representation and interpolation
-  - `collision.py`: Collision detection
-  - `kinematics.py`: Kinodynamic constraint checking
-  - `geometry.py`: Geometric utilities (distances, angles, etc.)
+    - `workspace.py`: 2D environment with obstacles
+    - `trajectory.py`: Trajectory representation and interpolation
+    - `collision.py`: Collision detection
+    - `kinematics.py`: Kinodynamic constraint checking
+    - `geometry.py`: Geometric utilities (distances, angles, etc.)
 
 ### Support Level: Data & Configuration
+
 - **Packages**: `src/data/`, `src/simulation/config.py`
 - **Responsibility**: Data loading, schema definitions, configuration management
 
@@ -154,6 +159,7 @@ The system evaluates these algorithms in direct adversarial competition rather t
 ## Key Abstractions
 
 ### AgentState (Pytree)
+
 ```python
 AgentState = {
     'position': Array,     # (2,) - [x, y]
@@ -163,6 +169,7 @@ AgentState = {
 ```
 
 ### Trajectory (Pytree)
+
 ```python
 Trajectory = {
     'times': Array,       # (T,)
@@ -172,6 +179,7 @@ Trajectory = {
 ```
 
 ### Workspace Configuration
+
 ```python
 WorkspaceConfig = {
     'bounds': Array,      # (2, 2) - [[x_min, x_max], [y_min, y_max]]
@@ -180,6 +188,7 @@ WorkspaceConfig = {
 ```
 
 ### Particle (for belief distribution)
+
 ```python
 Particle = {
     'goal_id': int,           # Index into candidate goals
@@ -190,17 +199,20 @@ Particle = {
 ## Technology Stack Integration
 
 ### JAX Ecosystem
+
 - **JAX**: Core array operations, autodiff, JIT compilation
 - **Equinox**: Neural network components (RNN observer, IRL reward function)
 - **Optax**: Optimizers for training (Adam, LBFGS for MPC)
 
 ### Python Scientific Stack
+
 - **NumPy**: Array operations (interop with JAX)
-- **SciPy**: Optimization, spatial data structures (KD-tree for RRT*)
+- **SciPy**: Optimization, spatial data structures (KD-tree for RRT\*)
 - **Matplotlib**: Visualization
 - **YAML**: Configuration files
 
 ### JAX Design Patterns
+
 - **Pure Functions**: All core algorithms are pure functions with explicit state
 - **Pytrees**: Structured data (states, trajectories, configs) as pytrees
 - **JIT Compilation**: Performance-critical code (collision checking, neural networks, cost functions)
@@ -211,26 +223,31 @@ Particle = {
 ## Design Principles
 
 ### 1. Agent-Based Separation
+
 - Clear package boundaries between `deceptive/` and `interceptor/`
 - No direct imports between agent packages
 - All shared functionality in `src/shared/`
 
 ### 2. Configuration-Driven
+
 - All experiments defined in YAML files
 - No hardcoded parameters in implementation
 - Easy parameter sweeps and ablation studies
 
 ### 3. JAX-First
+
 - Performance-critical code uses JAX (>90% of compute time)
 - Pure functions enable easy testing and JIT compilation
-- Non-JIT-friendly operations (RRT* tree building) use Python with JIT subroutines
+- Non-JIT-friendly operations (RRT\* tree building) use Python with JIT subroutines
 
 ### 4. Reproducibility
+
 - All random operations use JAX PRNG with explicit seeds
 - Configuration files include random seed
 - Deterministic simulation given same config
 
 ### 5. Testability
+
 - Pure functions with clear inputs/outputs
 - Unit tests for individual components
 - Integration tests for agent pipelines
@@ -265,6 +282,7 @@ src/shared/* (no dependencies on agent-specific code)
 ```
 
 ### Import Rules
+
 1. `src/shared/` can only import from `src/shared/` and standard libraries
 2. `src/deceptive/` can import from `src/shared/` and `src/deceptive/`
 3. `src/interceptor/` can import from `src/shared/` and `src/interceptor/`
@@ -274,22 +292,25 @@ src/shared/* (no dependencies on agent-specific code)
 ## Performance Considerations
 
 ### Computational Bottlenecks
-1. **RRT* Planning**: O(n log n) per iteration, ~5000 iterations
-   - Mitigation: JIT-compiled collision checks, efficient nearest-neighbor search
+
+1. **RRT\* Planning**: O(n log n) per iteration, ~5000 iterations
+    - Mitigation: JIT-compiled collision checks, efficient nearest-neighbor search
 2. **RNN Observer Inference**: O(sequence_length × hidden_size)
-   - Mitigation: JIT-compiled forward pass, small hidden size
+    - Mitigation: JIT-compiled forward pass, small hidden size
 3. **MPC Optimization**: O(iterations × horizon × state_dim)
-   - Mitigation: Warm-start from previous solution, short horizon (~20 steps)
+    - Mitigation: Warm-start from previous solution, short horizon (~20 steps)
 4. **Particle Filter Update**: O(num_particles × observation_complexity)
-   - Mitigation: vmap for parallel updates, adaptive resampling
+    - Mitigation: vmap for parallel updates, adaptive resampling
 
 ### Memory Usage
+
 - Trajectory storage: O(time_steps × num_agents × state_dim)
-- RRT* tree: O(num_nodes × (state_dim + connectivity))
+- RRT\* tree: O(num_nodes × (state_dim + connectivity))
 - Particle filter: O(num_particles × state_dim)
 - Neural networks: O(parameters) - stored on GPU if available
 
 ### GPU Utilization
+
 - Neural network inference (RNN observer)
 - Batch collision checking (vmap)
 - MPC optimization (JAX autodiff on GPU)
@@ -309,12 +330,14 @@ Future enhancements that can build on this architecture:
 ## Navigation
 
 **Next Steps**:
+
 - [`01-package-structure.md`](./01-package-structure.md) - Detailed package organization
 - [`02-data-schemas.md`](./02-data-schemas.md) - Data format specifications
 - [`05-deceptive-agent.md`](./05-deceptive-agent.md) - Agent D implementation guide
 - [`06-interceptor-agent.md`](./06-interceptor-agent.md) - Agent I implementation guide
 
 **Related**:
+
 - Project root: `../../`
 - Source code: `../../src/` (implementation goes here)
 - Report: `../../reports/main.typ` (problem formalization)

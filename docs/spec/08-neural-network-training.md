@@ -16,23 +16,23 @@ def generate_observer_training_data(
     key: PRNGKey
 ) -> TrajectoryDataset:
     """Generate synthetic trajectories for observer training."""
-    
+
     trajectories = []
     goal_ids = []
-    
+
     for goal_id, goal in enumerate(candidate_goals):
         for _ in range(num_samples_per_goal):
             # Sample random start position
             key, start_key = jax.random.split(key)
             start = sample_free_position(workspace, start_key)
-            
+
             # Plan optimal path using RRT*
             key, plan_key = jax.random.split(key)
             traj = basic_rrt_star(start, goal, workspace, plan_key)
-            
+
             trajectories.append(traj.positions)
             goal_ids.append(goal_id)
-    
+
     return TrajectoryDataset(
         trajectories=trajectories,
         goals=jnp.array([candidate_goals[gid] for gid in goal_ids]),
@@ -45,6 +45,7 @@ def generate_observer_training_data(
 See `05-deceptive-agent.md` for implementation details.
 
 **Hyperparameters**:
+
 - Hidden dim: 64
 - Learning rate: 1e-3
 - Batch size: 32

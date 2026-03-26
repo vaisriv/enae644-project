@@ -339,6 +339,7 @@ register_pytree_node(Workspace, workspace_flatten, workspace_unflatten)
 ## Edge Cases and Error Handling
 
 ### Empty Workspace
+
 ```python
 # Workspace with no obstacles
 empty_workspace = Workspace(
@@ -348,25 +349,29 @@ empty_workspace = Workspace(
 ```
 
 ### Degenerate Obstacles
+
 - **Zero-radius circle**: Treated as point (no collision)
 - **Polygon with < 3 vertices**: Raise ValueError during creation
 - **Self-intersecting polygon**: Undefined behavior (avoid or validate)
 
 ### Numerical Stability
+
 - Use epsilon tolerance for floating-point comparisons:
-  ```python
-  EPS = 1e-8
-  is_inside = (distance < -EPS)  # Account for numerical error
-  ```
+    ```python
+    EPS = 1e-8
+    is_inside = (distance < -EPS)  # Account for numerical error
+    ```
 
 ## Performance Considerations
 
 ### Computational Complexity
+
 - `is_collision_free`: O(num_obstacles) - linear scan
 - `distance_to_nearest_obstacle`: O(num_obstacles × vertices_per_obstacle)
 - `sample_free_position`: O(attempts × num_obstacles)
 
 ### Optimization Strategies
+
 1. **Spatial indexing** (extension point): Use KD-tree or grid for O(log n) obstacle queries
 2. **Batch processing**: Use vmap for checking multiple points simultaneously
 3. **Precomputation**: Cache obstacle bounding boxes for early rejection
@@ -374,6 +379,7 @@ empty_workspace = Workspace(
 ## Testing Strategy
 
 ### Unit Tests
+
 ```python
 def test_point_in_circle():
     obs = CircleObstacle(center=jnp.array([0, 0]), radius=1.0)
@@ -393,6 +399,7 @@ def test_workspace_bounds():
 ```
 
 ### Integration Tests
+
 - Validate collision checking against known scenarios
 - Test sampling produces valid free positions
 - Verify batch operations match sequential implementation
@@ -400,6 +407,7 @@ def test_workspace_bounds():
 ## Extension Points
 
 ### Future Enhancements
+
 1. **3D workspace**: Extend to 3D by changing shape (2,) → (3,) and adding sphere/polyhedron obstacles
 2. **Signed distance fields**: More efficient for complex obstacles
 3. **Dynamic obstacles**: Add time-dependent obstacle positions
