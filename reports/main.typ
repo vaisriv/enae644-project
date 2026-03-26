@@ -2,11 +2,11 @@
 
 #show: ieee.with(
     title: [ENAE644 Term Project],
-    // TODO: add abstract
     abstract: [
         #set text(fill: blue)
-        // FIXME:
-        #lorem(100)
+        This project implements and evaluates adversarial motion planning algorithms in a two-agent scenario where a deceptive agent attempts to reach a hidden goal while concealing its intent, and an interceptor agent seeks to infer the hidden goal and intercept the deceptive agent. The deceptive agent employs Adversarial RRT*, a sampling-based planner that extends RRT* by incorporating a learned deception cost function. A recurrent neural network serves as a surrogate observer, and the planner balances path optimality against observer classification accuracy using a weighted cost function. The interceptor agent combines inverse reinforcement learning to recover a behavioral model of the deceptive agent from historical demonstrations, particle filtering for online belief distribution tracking over candidate goals, and game-theoretic model predictive control for real-time interception planning with replanning. Both agents operate in a continuous two-dimensional workspace and are implemented in Python using JAX and Equinox for differentiable programming and GPU acceleration. Comprehensive software specifications have been developed, detailing the agent-based architecture, algorithm pseudocode, data schemas, and JAX implementation patterns. Implementation is currently in progress, beginning with shared infrastructure components.
+
+        NOTE: Experimental results and performance analysis will be added upon completion of implementation and evaluation. Planned experiments include baseline performance assessment, neural network training and validation, full adversarial scenarios with parameter sweeps, and ablation studies to isolate component contributions.
     ],
     authors: (
         (
@@ -33,13 +33,6 @@
     disclaimer: [],
     paper-size: "us-letter",
 )
-
-// TODO:
-// - [ ] add abstract
-// - [x] formal problem definition of the problem you are solving
-// - [x] make sure to pick the exact methods (specific algorithms and implementation processes for each agent) that you plan to use
-// - [x] please document current progress on your implementation (what you have done so far/are currently doing)
-// - [ ] list the experiments that you plan to run/currently running experiments
 
 = Introduction <introduction>
 
@@ -255,8 +248,33 @@ The final phase integrates all components into the simulation controller, implem
 
 Currently, the project has just finished specification, and will soon begin development---starting first with the shared infrastructure components in `src/shared/`.
 
-// TODO: list the experiments that you plan to run/currently running experiments
 == Procedure <procedure>
 
-// FIXME:
-#lorem(200)
+The experimental evaluation is designed to assess both individual agent performance and the adversarial interaction between the deceptive agent and the interceptor. Experiments will be conducted in a series of controlled scenarios with increasing complexity, enabling systematic analysis of each algorithm's strengths and failure modes.
+
+=== Baseline Experiments <baseline-experiments>
+The first set of experiments establishes baseline performance for both agents in isolation. For the deceptive agent, we will compare trajectories generated with varying deception weights $alpha in {0.0, 0.3, 0.5, 0.7, 1.0}$ in a simple workspace with a single circular obstacle and three candidate goals. When $alpha = 1.0$, the planner reduces to standard RRT\* and should produce near-optimal paths. When $alpha = 0.0$, the planner focuses purely on deception, potentially at the cost of path efficiency. These experiments will quantify the trade-off between path length and observer confusion across the deception weight spectrum.
+
+For the interceptor agent, baseline experiments will evaluate goal inference accuracy as a function of observation time. The deceptive agent will execute pre-planned trajectories (generated with $alpha = 0.3$) toward each candidate goal, and the particle filter's belief distribution will be recorded at regular intervals. We expect the interceptor's confidence in the true goal to increase monotonically with observation time, though deceptive trajectories should delay convergence compared to optimal trajectories. These experiments will establish a performance ceiling for the interceptor when operating against known deceptive strategies.
+
+=== Neural Network Training and Validation <neural-network-training>
+The RNN observer network will be trained on a dataset of 1000 synthetic trajectories (200 per candidate goal) generated using standard RRT\* in a fixed workspace configuration. Training will use cross-entropy loss with the Adam optimizer, and performance will be evaluated on a held-out test set of 200 trajectories. We expect classification accuracy to exceed 80% on optimal trajectories, as these exhibit clear directionality toward their respective goals. Accuracy on deceptive trajectories (generated post-training) will be measured to validate that the deception cost function successfully exploits the observer's weaknesses.
+
+The IRL module will be trained on expert demonstrations collected from the deceptive agent executing 500 trajectories with varying deception weights and goal configurations. We will validate the learned reward function by comparing predicted trajectories (generated by forward-simulating the learned policy) against ground-truth deceptive trajectories. Agreement between predicted and actual trajectories, measured by average endpoint error and dynamic time warping distance, will indicate successful behavioral model recovery.
+
+=== Adversarial Scenario Experiments <adversarial-scenarios>
+The core experiments pit the deceptive agent against the interceptor in full adversarial scenarios. A baseline scenario features a $10 times 10$ workspace with two circular obstacles and three candidate goals positioned at the workspace corners. The deceptive agent starts at position $(1, 1)$ with true goal $(9, 9)$, while the interceptor starts at $(9, 1)$. The deceptive agent plans its full trajectory offline using Adversarial RRT\* with $alpha = 0.3$, and the interceptor updates its belief and replans every $Delta t = 0.1$ seconds using the particle filter and MPC controller.
+
+Success criteria are defined as follows. The deceptive agent succeeds if it reaches its goal (within radius 0.5) before being intercepted. The interceptor succeeds if it approaches within the interception threshold (0.5 units) of the deceptive agent before the goal is reached. Experiments will be repeated across 50 randomized initial configurations to obtain statistically meaningful success rates for each agent.
+
+We will conduct parameter sweeps over key variables: deception weight $alpha in {0.0, 0.1, 0.2, ..., 1.0}$, number of candidate goals $M in {3, 5, 7}$, workspace complexity (varying number and size of obstacles), and interceptor advantage (velocity ratio $v_I \/ v_D in {1.0, 1.25, 1.5}$). These experiments will reveal how deception effectiveness scales with problem difficulty and identify parameter regimes where each agent dominates.
+
+=== Ablation Studies <ablation-studies>
+Ablation experiments will isolate the contribution of individual components. To assess the value of deception, we will compare the deceptive agent (with trained observer, $alpha = 0.3$) against a baseline agent using standard RRT\* ($alpha = 1.0$). We expect the deceptive agent to achieve higher success rates against the interceptor, demonstrating that trajectory obfuscation provides a measurable advantage.
+
+To evaluate the interceptor's IRL-based prediction, we will compare the full interceptor (with learned behavioral model) against a simplified variant that assumes the deceptive agent follows optimal paths. This ablation will quantify the benefit of accounting for deceptive behavior in the interceptor's motion model. Similarly, we will compare the particle filter approach against a maximum likelihood goal estimator that does not maintain a belief distribution, assessing whether probabilistic inference improves robustness to ambiguous observations.
+
+=== Performance Metrics <performance-metrics>
+All experiments will collect the following metrics. For the deceptive agent: observer classification accuracy $P(g^* | xi_D)$ at trajectory completion, path length ratio $J_"path" (xi_D^*) \/ J_"path" (xi_D^"opt")$ comparing actual path length to the optimal path, and success rate (percentage of trials reaching goal before interception). For the interceptor: goal inference accuracy (whether MAP estimate equals true goal), belief entropy $H(b_t)$ over time, time to confident inference (first time $max_g b_t (g) > 0.8$), and interception success rate. For the adversarial interaction: minimum distance between agents during execution, time to interception (if successful), and computational performance (planning time, MPC solve time per step).
+
+These metrics will be aggregated across trials and analyzed using statistical hypothesis tests (Mann-Whitney U test for success rates, t-tests for continuous metrics) to determine whether observed differences are statistically significant.
