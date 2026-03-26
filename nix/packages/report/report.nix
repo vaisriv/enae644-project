@@ -14,12 +14,4 @@ inputs.typix.lib.${system}.buildTypstProjectLocal {
         "${pkgs.tex-gyre.cursor}/share/fonts/opentype"
         "${pkgs.tex-gyre.termes}/share/fonts/opentype"
     ];
-
-    unstable_typstPackages = [
-        {
-            name = "bamdone-ieeeconf";
-            version = "0.1.3";
-            hash = "sha256-1aZsMoL/FFKyr9M3cNIPpbM/BZ7hDPYr1NgEeQOA/lE=";
-        }
-    ];
 }
