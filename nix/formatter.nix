@@ -15,7 +15,7 @@ inputs.treefmt-nix.lib.mkWrapper pkgs {
         };
     };
 
-    # md
+    # markdown
     programs.prettier = {
         enable = true;
         settings = {
@@ -23,14 +23,27 @@ inputs.treefmt-nix.lib.mkWrapper pkgs {
         };
     };
 
-    # latex
-    programs = {
-        latexindent.enable = true;
+    # typst
+    programs.typstyle = {
+        enable = true;
+        indentWidth = 4;
     };
 
     # python
     programs = {
         ruff-check.enable = true;
         ruff-format.enable = true;
+    };
+
+    # yaml
+    programs.yamlfmt = {
+        enable = true;
+        settings.formatter = {
+            indent = 4;
+            trim_trailing_whitespace = true;
+
+            force_array_style = "block";
+            force_quote_style = "double";
+        };
     };
 }

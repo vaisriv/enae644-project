@@ -19,9 +19,16 @@
             url = "github:numtide/treefmt-nix";
             inputs.nixpkgs.follows = "nixpkgs";
         };
+
+        # typst
+        typix = {
+            url = "github:loqusion/typix";
+            inputs.nixpkgs.follows = "nixpkgs";
+        };
     };
 
-    outputs = inputs:
+    outputs =
+        inputs:
         inputs.blueprint {
             inherit inputs;
             prefix = "./nix/";

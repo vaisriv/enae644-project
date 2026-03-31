@@ -62,7 +62,8 @@
         "blueprint": "blueprint",
         "devshell": "devshell",
         "nixpkgs": "nixpkgs",
-        "treefmt-nix": "treefmt-nix"
+        "treefmt-nix": "treefmt-nix",
+        "typix": "typix"
       }
     },
     "systems": {
@@ -97,6 +98,26 @@
       "original": {
         "owner": "numtide",
         "repo": "treefmt-nix",
+        "type": "github"
+      }
+    },
+    "typix": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1770454285,
+        "narHash": "sha256-phmRhL/oS1MRoRsrF9bSLe+ZNlBOI6bRqYrLhFKAC54=",
+        "owner": "loqusion",
+        "repo": "typix",
+        "rev": "f3dd958107debd143a1f1236d1994419e2bf7491",
+        "type": "github"
+      },
+      "original": {
+        "owner": "loqusion",
+        "repo": "typix",
         "type": "github"
       }
     }
