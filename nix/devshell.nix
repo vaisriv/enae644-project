@@ -39,10 +39,11 @@ perSystem.devshell.mkShell {
         }
         ## typst
         {
-            name = "tyr";
+            name = "typ";
             category = "[typst]";
-            help = "run";
-            command = "nix run .#report.watch";
+            help = "preview";
+            # command = "nix run .#report.watch";
+            command = "tinymist preview reports/main.typ --root=.";
         }
         {
             name = "tyl";
