@@ -21,8 +21,6 @@ import jax
 #     save_belief_history_csv
 # )
 
-__all__ = ["main"]
-
 
 def main():
     """Main execution function."""
