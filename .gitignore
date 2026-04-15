@@ -6,9 +6,12 @@
 # *~
 
 # nix
-.direnv
-result
-result-*
+**/.direnv
+**/result
+**/result-*
+
+# typst
+**/target
 
 # python
 **/.venv
