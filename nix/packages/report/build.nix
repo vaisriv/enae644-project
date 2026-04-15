@@ -5,9 +5,13 @@
     ...
 }:
 inputs.typix.lib.${system}.buildTypstProjectLocal {
-    src = ../../../reports;
-    typstSource = "./main.typ";
+    src = ../../..;
+    typstSource = "./reports/main.typ";
     typstOutput = "./reports/main.pdf";
+
+    typstOpts = {
+        root = ".";
+    };
 
     fontPaths =
         with pkgs;
