@@ -9,9 +9,9 @@ inputs.typix.lib.${system}.buildTypstProjectLocal {
     typstSource = "./main.typ";
     typstOutput = "./reports/main.pdf";
 
-    fontPaths = [
-        "${pkgs.newcomputermodern}/share/fonts/opentype"
-        "${pkgs.tex-gyre.cursor}/share/fonts/opentype"
-        "${pkgs.tex-gyre.termes}/share/fonts/opentype"
+    fontPaths = with pkgs; map (p: "${p}/share/fonts/opentype") [
+        newcomputermodern
+        tex-gyre.cursor
+        tex-gyre.termes
     ];
 }
