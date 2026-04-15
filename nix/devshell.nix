@@ -75,11 +75,13 @@ perSystem.devshell.mkShell {
     env = [
         {
             name = "TYPST_FONT_PATHS";
-            prefix = with pkgs; lib.makeSearchPath "share/fonts/opentype" [
-                newcomputermodern
-                tex-gyre.cursor
-                tex-gyre.termes
-            ];
+            prefix =
+                with pkgs;
+                lib.makeSearchPath "share/fonts/opentype" [
+                    newcomputermodern
+                    tex-gyre.cursor
+                    tex-gyre.termes
+                ];
         }
     ];
 }

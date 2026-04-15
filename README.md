@@ -6,7 +6,7 @@ ENAE644 Term Project implementing two-agent adversarial planning in continuous 2
 
 Two competing agents with learning-based and game-theoretic planning:
 
-- **Deceptive Agent**: Uses Adversarial RRT* with learned deception costs to conceal its true objective
+- **Deceptive Agent**: Uses Adversarial RRT\* with learned deception costs to conceal its true objective
 - **Interceptor Agent**: Employs inverse reinforcement learning and game-theoretic prediction to infer goals and plan interception
 
 Built with [Python 3.13](https://python.org/downloads/release/python-31311) ([JAX](https://docs.jax.dev/en/latest)/[Equinox](https://docs.kidger.site/equinox)), [Typst](https://typst.app/home), and [Nix](https://nixos.org).
