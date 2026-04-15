@@ -44,13 +44,15 @@ perSystem.devshell.mkShell {
         tinymist
 
         # python
-        (python3.withPackages (
+        (python313.withPackages (
             ps: with ps; [
                 # python packages here
                 matplotlib
                 numpy
                 scipy
                 cartopy
+                jax
+                equinox
             ]
         ))
         uv

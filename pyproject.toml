@@ -1,0 +1,31 @@
+[project]
+name = "adversarial-planning"
+version = "0.1.0"
+description = "Adversarial motion planning with deceptive trajectories and game-theoretic interception"
+readme = "README.md"
+authors = [
+    { name = "Vai Srivastava", email = "vaisriv@icloud.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "jax>=0.4.20",
+    "jaxlib>=0.4.20",
+    "equinox>=0.11.0",
+    "optax>=0.1.7",
+    "jaxtyping>=0.2.28",
+    "numpy>=1.26.0",
+    "scipy>=1.11.0",
+    "matplotlib>=3.8.0",
+    "pyyaml>=6.0.1",
+]
+
+[project.scripts]
+adversarial-planning = "src:main"
+
+[build-system]
+requires = ["uv_build>=0.9.29,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "src"
+module-root = ""
