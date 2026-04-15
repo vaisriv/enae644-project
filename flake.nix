@@ -20,6 +20,29 @@
             inputs.nixpkgs.follows = "nixpkgs";
         };
 
+        # python
+        uv2nix = {
+            url = "github:pyproject-nix/uv2nix";
+            inputs = {
+                pyproject-nix.follows = "pyproject-nix";
+                nixpkgs.follows = "nixpkgs";
+            };
+        };
+        pyproject-nix = {
+            url = "github:pyproject-nix/pyproject.nix";
+            inputs = {
+                nixpkgs.follows = "nixpkgs";
+            };
+        };
+        pyproject-build-systems = {
+            url = "github:pyproject-nix/build-system-pkgs";
+            inputs = {
+                uv2nix.follows = "uv2nix";
+                pyproject-nix.follows = "pyproject-nix";
+                nixpkgs.follows = "nixpkgs";
+            };
+        };
+
         # typst
         typix = {
             url = "github:loqusion/typix";

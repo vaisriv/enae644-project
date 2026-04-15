@@ -1,1 +1,1 @@
-{ perSystem, ... }: perSystem.self.report
+{ perSystem, ... }: perSystem.self.adversarial-planning

@@ -24,18 +24,8 @@ perSystem.devshell.mkShell {
             name = "py";
             category = "[submission]";
             help = "run submission python script";
-            command =
-                # bash
-                ''
-                    CYAN="\e[0;36m"
-                    NC="\e[0m"
-
-                    cd $(git rev-parse --show-toplevel)
-
-                    echo -e -n "$CYAN"
-                    echo -e "running python script for $(basename $(pwd)):$NC"
-                    python ./submission.py
-                '';
+            # command = "nix run .#adversarial-planning";
+            command = "uv run adversarial-planning";
         }
     ];
 
