@@ -26,6 +26,12 @@ perSystem.devshell.mkShell {
             command = "ty check -W src";
         }
         {
+            name = "pyt";
+            category = "[python]";
+            help = "test";
+            command = "uv run coverage run --omit \"/nix/store/*\" -m pytest tests";
+        }
+        {
             name = "pys";
             category = "[python]";
             help = "compile submission";
@@ -66,6 +72,9 @@ perSystem.devshell.mkShell {
                 cartopy
                 jax
                 equinox
+                pyyaml
+                coverage
+                pytest
             ]
         ))
         uv
