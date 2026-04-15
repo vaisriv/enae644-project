@@ -71,8 +71,7 @@ class TestPointToSegmentDistance:
         seg_start = jnp.array([0.0, 0.0])
         seg_end = jnp.array([4.0, 0.0])
         assert jnp.isclose(
-            geometry.point_to_segment_distance(point, seg_start, seg_end),
-            0.0
+            geometry.point_to_segment_distance(point, seg_start, seg_end), 0.0
         )
 
     @pytest.mark.skip(reason="Not implemented yet")
@@ -83,8 +82,7 @@ class TestPointToSegmentDistance:
         seg_end = jnp.array([4.0, 0.0])
         # Point is 3 units above segment
         assert jnp.isclose(
-            geometry.point_to_segment_distance(point, seg_start, seg_end),
-            3.0
+            geometry.point_to_segment_distance(point, seg_start, seg_end), 3.0
         )
 
 

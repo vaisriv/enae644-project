@@ -73,8 +73,8 @@ perSystem.devshell.mkShell {
                 jax
                 equinox
                 pyyaml
-                coverage
                 pytest
+                coverage
             ]
         ))
         uv

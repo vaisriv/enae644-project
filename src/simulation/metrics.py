@@ -15,7 +15,7 @@ def compute_all_metrics(
     trajectory_I: Trajectory,
     belief_history: List[jnp.ndarray],
     observer_net,  # TrajectoryClassifier
-    true_goal: jnp.ndarray
+    true_goal: jnp.ndarray,
 ) -> Dict[str, float]:
     """Compute all performance metrics for a simulation run.
 
@@ -46,10 +46,7 @@ def compute_all_metrics(
 
 
 def compute_observer_accuracy(
-    trajectory: Trajectory,
-    observer_net,
-    true_goal: jnp.ndarray,
-    goal_id: int
+    trajectory: Trajectory, observer_net, true_goal: jnp.ndarray, goal_id: int
 ) -> float:
     """Compute observer network's classification accuracy.
 
@@ -124,8 +121,7 @@ def compute_mean_belief_entropy(belief_history: List[jnp.ndarray]) -> float:
 
 
 def compute_interception_distance(
-    trajectory_D: Trajectory,
-    trajectory_I: Trajectory
+    trajectory_D: Trajectory, trajectory_I: Trajectory
 ) -> float:
     """Compute minimum distance between two trajectories.
 
@@ -148,9 +144,7 @@ def compute_interception_distance(
 
 
 def compute_goal_inference_accuracy(
-    belief_history: List[jnp.ndarray],
-    true_goal_id: int,
-    threshold: float = 0.5
+    belief_history: List[jnp.ndarray], true_goal_id: int, threshold: float = 0.5
 ) -> float:
     """Compute fraction of time true goal was most likely.
 
@@ -171,8 +165,7 @@ def compute_goal_inference_accuracy(
 
 
 def compute_time_to_convergence(
-    belief_history: List[jnp.ndarray],
-    convergence_threshold: float = 0.8
+    belief_history: List[jnp.ndarray], convergence_threshold: float = 0.8
 ) -> float:
     """Compute time until belief converges to a single goal.
 
@@ -192,9 +185,7 @@ def compute_time_to_convergence(
 
 
 def compute_deception_effectiveness(
-    observer_accuracy: float,
-    path_length_ratio: float,
-    alpha: float
+    observer_accuracy: float, path_length_ratio: float, alpha: float
 ) -> float:
     """Compute overall deception effectiveness score.
 
@@ -218,9 +209,7 @@ def compute_deception_effectiveness(
 
 
 def compute_interception_efficiency(
-    interception_distance: float,
-    time_to_convergence: float,
-    simulation_time: float
+    interception_distance: float, time_to_convergence: float, simulation_time: float
 ) -> float:
     """Compute interceptor agent's performance score.
 

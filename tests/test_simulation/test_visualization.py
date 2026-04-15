@@ -1,7 +1,6 @@
 """Tests for visualization functions."""
 
 import pytest
-from src.simulation import visualization
 
 
 class TestPlotTrajectories:

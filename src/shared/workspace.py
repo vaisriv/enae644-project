@@ -8,12 +8,16 @@ This module provides the Workspace dataclass and related functions for:
 
 from dataclasses import dataclass
 from typing import List, Union
+import jax
 import jax.numpy as jnp
+
+from src.shared.collision import point_in_circle, point_in_polygon
 
 
 @dataclass
 class CircleObstacle:
     """Circle obstacle in 2D workspace."""
+
     center: jnp.ndarray  # (2,) position
     radius: float
 
@@ -21,6 +25,7 @@ class CircleObstacle:
 @dataclass
 class PolygonObstacle:
     """Polygon obstacle in 2D workspace."""
+
     vertices: jnp.ndarray  # (N, 2) vertices in counter-clockwise order
 
 
@@ -35,6 +40,7 @@ class Workspace:
         bounds: (2, 2) array [[x_min, x_max], [y_min, y_max]]
         obstacles: List of CircleObstacle and/or PolygonObstacle
     """
+
     bounds: jnp.ndarray  # (2, 2)
     obstacles: List[Obstacle]
 
@@ -71,10 +77,9 @@ def is_in_bounds(point: jnp.ndarray, bounds: jnp.ndarray) -> bool:
     Returns:
         True if point is within bounds, False otherwise
     """
-    # TODO: Implement bounds checking
-    # Check: bounds[0, 0] <= point[0] <= bounds[0, 1]
-    #        bounds[1, 0] <= point[1] <= bounds[1, 1]
-    raise NotImplementedError("is_in_bounds not implemented")
+    x_in_bounds = (bounds[0, 0] <= point[0]) & (point[0] <= bounds[0, 1])
+    y_in_bounds = (bounds[1, 0] <= point[1]) & (point[1] <= bounds[1, 1])
+    return x_in_bounds & y_in_bounds
 
 
 def is_collision_free(point: jnp.ndarray, obstacles: List[Obstacle]) -> bool:
@@ -87,12 +92,14 @@ def is_collision_free(point: jnp.ndarray, obstacles: List[Obstacle]) -> bool:
     Returns:
         True if point collides with no obstacles, False otherwise
     """
-    # TODO: Implement collision checking
-    # Iterate through obstacles and check:
-    #   - CircleObstacle: use point_in_circle from collision module
-    #   - PolygonObstacle: use point_in_polygon from collision module
-    # Return False if ANY collision, True if all collision-free
-    raise NotImplementedError("is_collision_free not implemented")
+    for obstacle in obstacles:
+        if isinstance(obstacle, CircleObstacle):
+            if point_in_circle(point, obstacle.center, obstacle.radius):
+                return False
+        elif isinstance(obstacle, PolygonObstacle):
+            if point_in_polygon(point, obstacle.vertices):
+                return False
+    return True
 
 
 def is_in_workspace(point: jnp.ndarray, workspace: Workspace) -> bool:
@@ -105,9 +112,9 @@ def is_in_workspace(point: jnp.ndarray, workspace: Workspace) -> bool:
     Returns:
         True if point is in bounds and collision-free, False otherwise
     """
-    # TODO: Implement by combining is_in_bounds and is_collision_free
-    # return is_in_bounds(point, workspace.bounds) and is_collision_free(point, workspace.obstacles)
-    raise NotImplementedError("is_in_workspace not implemented")
+    return is_in_bounds(point, workspace.bounds) and is_collision_free(
+        point, workspace.obstacles
+    )
 
 
 def sample_collision_free_point(workspace: Workspace, key: jnp.ndarray) -> jnp.ndarray:
@@ -123,9 +130,31 @@ def sample_collision_free_point(workspace: Workspace, key: jnp.ndarray) -> jnp.n
     Note:
         Uses rejection sampling. May be slow in highly constrained spaces.
     """
-    # TODO: Implement rejection sampling
-    # 1. Sample random point in bounds
-    # 2. Check if collision-free
-    # 3. If yes, return; if no, repeat
-    # Use jax.random.uniform() for sampling
-    raise NotImplementedError("sample_collision_free_point not implemented")
+    # Rejection sampling: keep sampling until we find a collision-free point
+    bounds = workspace.bounds
+
+    def sample_once(carry):
+        key, point = carry
+        # Split key for next iteration
+        key, subkey = jax.random.split(key)
+
+        # Sample point uniformly in bounds
+        x = jax.random.uniform(subkey, minval=bounds[0, 0], maxval=bounds[0, 1])
+        key, subkey = jax.random.split(key)
+        y = jax.random.uniform(subkey, minval=bounds[1, 0], maxval=bounds[1, 1])
+        point = jnp.array([x, y])
+
+        return (key, point)
+
+    def condition(carry):
+        key, point = carry
+        # Continue sampling if point is NOT collision-free
+        return ~is_collision_free(point, workspace.obstacles)
+
+    # Initial sample
+    key, point = sample_once((key, jnp.zeros(2)))
+
+    # Keep sampling until collision-free
+    key, point = jax.lax.while_loop(condition, sample_once, (key, point))
+
+    return point

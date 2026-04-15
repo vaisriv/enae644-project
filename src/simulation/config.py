@@ -5,18 +5,16 @@ functions to load/validate YAML configuration files.
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
-from pathlib import Path
-import yaml
-import jax.numpy as jnp
+from typing import List, Dict, Any
 
 
 @dataclass
 class ObstacleConfig:
     """Configuration for a single obstacle."""
+
     type: str  # "circle" or "polygon"
     params: Dict[str, Any]  # For circle: {center: [x, y], radius: r}
-                             # For polygon: {vertices: [[x1, y1], [x2, y2], ...]}
+    # For polygon: {vertices: [[x1, y1], [x2, y2], ...]}
 
 
 @dataclass
@@ -27,6 +25,7 @@ class WorkspaceConfig:
         bounds: [[x_min, x_max], [y_min, y_max]]
         obstacles: List of obstacle configurations
     """
+
     bounds: List[List[float]]
     obstacles: List[ObstacleConfig] = field(default_factory=list)
 
@@ -34,6 +33,7 @@ class WorkspaceConfig:
 @dataclass
 class PlannerConfig:
     """RRT* planner configuration for deceptive agent."""
+
     max_iterations: int = 5000
     step_size: float = 0.5
     goal_radius: float = 0.5
@@ -46,6 +46,7 @@ class PlannerConfig:
 @dataclass
 class ObserverConfig:
     """Observer network configuration for deceptive agent."""
+
     checkpoint_path: str
     num_goals: int
     hidden_size: int = 64
@@ -62,6 +63,7 @@ class DeceptiveAgentConfig:
         planner: RRT* planner parameters
         observer: Observer network parameters
     """
+
     initial_position: List[float]
     true_goal: List[float]
     candidate_goals: List[List[float]]
@@ -72,6 +74,7 @@ class DeceptiveAgentConfig:
 @dataclass
 class IRLConfig:
     """Inverse reinforcement learning configuration."""
+
     checkpoint_path: str
     feature_dim: int = 32
     learning_rate: float = 0.001
@@ -80,6 +83,7 @@ class IRLConfig:
 @dataclass
 class ParticleFilterConfig:
     """Particle filter configuration for belief tracking."""
+
     num_particles: int = 1000
     resample_threshold: float = 0.5  # Effective sample size threshold
 
@@ -87,6 +91,7 @@ class ParticleFilterConfig:
 @dataclass
 class MPCConfig:
     """Model predictive control configuration."""
+
     horizon: int = 20
     dt: float = 0.1
     control_weight: float = 0.01  # λ_u regularization
@@ -105,6 +110,7 @@ class InterceptorAgentConfig:
         particle_filter: Particle filter parameters
         mpc: MPC planner parameters
     """
+
     initial_position: List[float]
     candidate_goals: List[List[float]]
     irl: IRLConfig
@@ -115,6 +121,7 @@ class InterceptorAgentConfig:
 @dataclass
 class SimulationParameters:
     """Core simulation parameters."""
+
     timestep: float = 0.1  # Δt for discrete time stepping
     max_time: float = 100.0  # Timeout
     intercept_threshold: float = 0.5  # Distance for successful interception
@@ -128,6 +135,7 @@ class SimulationConfig:
 
     This is the top-level config object loaded from YAML.
     """
+
     workspace: WorkspaceConfig
     deceptive_agent: DeceptiveAgentConfig
     interceptor_agent: InterceptorAgentConfig

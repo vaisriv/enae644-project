@@ -12,6 +12,8 @@ import jax
 import jax.numpy as jnp
 from typing import List
 
+from src.shared.geometry import point_to_segment_distance, cross_product_2d
+
 
 def point_in_circle(point: jnp.ndarray, center: jnp.ndarray, radius: float) -> bool:
     """Check if a point is inside a circle.
@@ -27,10 +29,8 @@ def point_in_circle(point: jnp.ndarray, center: jnp.ndarray, radius: float) -> b
     Note:
         This function is JIT-compilable.
     """
-    # TODO: Implement circle collision
-    # distance = jnp.linalg.norm(point - center)
-    # return distance <= radius
-    raise NotImplementedError("point_in_circle not implemented")
+    distance = jnp.linalg.norm(point - center)
+    return distance <= radius
 
 
 def point_in_polygon(point: jnp.ndarray, vertices: jnp.ndarray) -> bool:
@@ -50,21 +50,36 @@ def point_in_polygon(point: jnp.ndarray, vertices: jnp.ndarray) -> bool:
 
         This function is JIT-compilable.
     """
-    # TODO: Implement ray casting algorithm
-    # 1. Cast horizontal ray from point to the right (+x direction)
-    # 2. For each edge (v[i], v[i+1]):
-    #    - Check if ray crosses edge
-    #    - Increment counter if yes
-    # 3. Return (counter % 2 == 1)
-    # Use jax.lax.fori_loop for JIT compatibility
-    raise NotImplementedError("point_in_polygon not implemented")
+    # Ray casting: cast horizontal ray from point to the right
+    # Count edge crossings; odd = inside, even = outside
+
+    n = vertices.shape[0]
+    px, py = point[0], point[1]
+
+    def check_edge(i, count):
+        v1 = vertices[i]
+        v2 = vertices[(i + 1) % n]
+
+        # Check if ray crosses edge (v1, v2)
+        # Edge must straddle the horizontal line at py
+        crosses_y = (v1[1] > py) != (v2[1] > py)
+
+        # Compute x-coordinate of intersection with horizontal line
+        # x = v1.x + (py - v1.y) * (v2.x - v1.x) / (v2.y - v1.y)
+        x_intersect = v1[0] + (py - v1[1]) * (v2[0] - v1[0]) / (v2[1] - v1[1] + 1e-10)
+
+        # Ray goes to the right (+x), so intersection must be at x > px
+        crosses_x = x_intersect > px
+
+        # Count crossing if both conditions are met
+        return count + jnp.where(crosses_y & crosses_x, 1, 0)
+
+    crossing_count = jax.lax.fori_loop(0, n, check_edge, 0)
+    return (crossing_count % 2) == 1
 
 
 def segment_circle_collision(
-    seg_start: jnp.ndarray,
-    seg_end: jnp.ndarray,
-    center: jnp.ndarray,
-    radius: float
+    seg_start: jnp.ndarray, seg_end: jnp.ndarray, center: jnp.ndarray, radius: float
 ) -> bool:
     """Check if a line segment intersects a circle.
 
@@ -81,17 +96,12 @@ def segment_circle_collision(
         Uses point-to-segment distance formula.
         This function is JIT-compilable.
     """
-    # TODO: Implement segment-circle collision
-    # 1. Compute distance from center to segment
-    # 2. Check if distance <= radius
-    # Use point_to_segment_distance from geometry module
-    raise NotImplementedError("segment_circle_collision not implemented")
+    distance = point_to_segment_distance(center, seg_start, seg_end)
+    return distance <= radius
 
 
 def segment_polygon_collision(
-    seg_start: jnp.ndarray,
-    seg_end: jnp.ndarray,
-    vertices: jnp.ndarray
+    seg_start: jnp.ndarray, seg_end: jnp.ndarray, vertices: jnp.ndarray
 ) -> bool:
     """Check if a line segment intersects a polygon.
 
@@ -109,18 +119,27 @@ def segment_polygon_collision(
         2. If segment intersects any polygon edge
         This function is JIT-compilable.
     """
-    # TODO: Implement segment-polygon collision
-    # 1. Check if seg_start or seg_end is inside polygon
-    # 2. Check if segment intersects any edge
-    # Use point_in_polygon and segment_segment_intersection
-    raise NotImplementedError("segment_polygon_collision not implemented")
+    # Check if either endpoint is inside polygon
+    if point_in_polygon(seg_start, vertices) or point_in_polygon(seg_end, vertices):
+        return True
+
+    # Check if segment intersects any polygon edge
+    n = vertices.shape[0]
+
+    def check_edge_intersection(i, has_collision):
+        v1 = vertices[i]
+        v2 = vertices[(i + 1) % n]
+        intersects = segment_segment_intersection(seg_start, seg_end, v1, v2)
+        return has_collision | intersects
+
+    return jax.lax.fori_loop(0, n, check_edge_intersection, False)
 
 
 def segment_segment_intersection(
     seg1_start: jnp.ndarray,
     seg1_end: jnp.ndarray,
     seg2_start: jnp.ndarray,
-    seg2_end: jnp.ndarray
+    seg2_end: jnp.ndarray,
 ) -> bool:
     """Check if two line segments intersect.
 
@@ -137,19 +156,27 @@ def segment_segment_intersection(
         Uses cross product method for intersection testing.
         This function is JIT-compilable.
     """
-    # TODO: Implement segment-segment intersection
-    # Use cross product method:
-    # Segments (p1,p2) and (p3,p4) intersect if:
-    #   - cross(p3-p1, p2-p1) and cross(p4-p1, p2-p1) have opposite signs
-    #   - cross(p1-p3, p4-p3) and cross(p2-p3, p4-p3) have opposite signs
-    raise NotImplementedError("segment_segment_intersection not implemented")
+    # Use cross product method
+    # Segments (p1,p2) and (p3,p4) intersect if they straddle each other
+
+    p1, p2 = seg1_start, seg1_end
+    p3, p4 = seg2_start, seg2_end
+
+    # Check if p3 and p4 are on opposite sides of line through p1-p2
+    d1 = cross_product_2d(p2 - p1, p3 - p1)
+    d2 = cross_product_2d(p2 - p1, p4 - p1)
+
+    # Check if p1 and p2 are on opposite sides of line through p3-p4
+    d3 = cross_product_2d(p4 - p3, p1 - p3)
+    d4 = cross_product_2d(p4 - p3, p2 - p3)
+
+    # Segments intersect if signs are opposite (or zero for touching)
+    return (d1 * d2 <= 0) & (d3 * d4 <= 0)
 
 
 @jax.jit
 def batch_collision_check(
-    points: jnp.ndarray,
-    circle_centers: jnp.ndarray,
-    circle_radii: jnp.ndarray
+    points: jnp.ndarray, circle_centers: jnp.ndarray, circle_radii: jnp.ndarray
 ) -> jnp.ndarray:
     """Vectorized collision check for multiple points and circles.
 
@@ -164,18 +191,23 @@ def batch_collision_check(
     Note:
         Uses vmap for vectorization. This is JIT-compiled.
     """
-    # TODO: Implement vectorized collision checking
-    # 1. For each point, check collision with all circles
-    # 2. Use vmap to vectorize over points and circles
-    # 3. Return OR-reduction: any collision means True
-    # Example: jax.vmap(lambda p: jax.vmap(lambda c, r: point_in_circle(p, c, r))(centers, radii).any())(points)
-    raise NotImplementedError("batch_collision_check not implemented")
+    # For each point, check collision with all circles
+    # Use vmap to vectorize over points and circles
+
+    def check_point_all_circles(point):
+        # Check this point against all circles
+        def check_one_circle(center, radius):
+            return point_in_circle(point, center, radius)
+
+        collisions = jax.vmap(check_one_circle)(circle_centers, circle_radii)
+        return jnp.any(collisions)
+
+    # Vectorize over all points
+    return jax.vmap(check_point_all_circles)(points)
 
 
 def path_collision_free(
-    path: jnp.ndarray,
-    circle_obstacles: List,
-    polygon_obstacles: List
+    path: jnp.ndarray, circle_obstacles: List, polygon_obstacles: List
 ) -> bool:
     """Check if an entire path is collision-free.
 
@@ -190,9 +222,21 @@ def path_collision_free(
     Note:
         Checks each segment (path[i], path[i+1]) against all obstacles.
     """
-    # TODO: Implement path collision checking
-    # For each segment in path:
-    #   - Check segment_circle_collision for all circle obstacles
-    #   - Check segment_polygon_collision for all polygon obstacles
-    # Return True only if all segments are collision-free
-    raise NotImplementedError("path_collision_free not implemented")
+    # Check each segment in path against all obstacles
+    n_waypoints = path.shape[0]
+
+    for i in range(n_waypoints - 1):
+        seg_start = path[i]
+        seg_end = path[i + 1]
+
+        # Check against circle obstacles
+        for center, radius in circle_obstacles:
+            if segment_circle_collision(seg_start, seg_end, center, radius):
+                return False
+
+        # Check against polygon obstacles
+        for vertices in polygon_obstacles:
+            if segment_polygon_collision(seg_start, seg_end, vertices):
+                return False
+
+    return True

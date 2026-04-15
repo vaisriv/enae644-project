@@ -23,15 +23,14 @@ class Trajectory:
         positions: (T, 2) array of [x, y] positions
         velocities: (T, 2) array of [vx, vy] velocities
     """
-    times: jnp.ndarray       # (T,)
-    positions: jnp.ndarray   # (T, 2)
+
+    times: jnp.ndarray  # (T,)
+    positions: jnp.ndarray  # (T, 2)
     velocities: jnp.ndarray  # (T, 2)
 
 
 def create_trajectory(
-    times: jnp.ndarray,
-    positions: jnp.ndarray,
-    velocities: Optional[jnp.ndarray] = None
+    times: jnp.ndarray, positions: jnp.ndarray, velocities: Optional[jnp.ndarray] = None
 ) -> Trajectory:
     """Create a Trajectory from time-series data.
 
@@ -48,11 +47,19 @@ def create_trajectory(
         >>> positions = jnp.array([[0.0, 0.0], [1.0, 0.0], [2.0, 0.0]])
         >>> traj = create_trajectory(times, positions)
     """
-    # TODO: Implement velocity computation if not provided
-    # Use finite differences: v[i] = (pos[i+1] - pos[i]) / (t[i+1] - t[i])
-    # For last point, use v[T-1] = v[T-2]
     if velocities is None:
-        raise NotImplementedError("Automatic velocity computation not implemented")
+        # Compute velocities using finite differences
+        T = len(times)
+        vels = []
+
+        for i in range(T - 1):
+            dt = times[i + 1] - times[i]
+            dpos = positions[i + 1] - positions[i]
+            vels.append(dpos / dt)
+
+        # For last point, use same velocity as second-to-last
+        vels.append(vels[-1] if len(vels) > 0 else jnp.zeros(2))
+        velocities = jnp.stack(vels)
 
     # TODO: Add validation:
     #   - times is sorted and strictly increasing
@@ -75,12 +82,22 @@ def interpolate_position(traj: Trajectory, t: float) -> jnp.ndarray:
     Raises:
         ValueError: If t is outside trajectory time range
     """
-    # TODO: Implement linear interpolation
-    # 1. Find interval: traj.times[i] <= t <= traj.times[i+1]
-    # 2. Compute interpolation weight: alpha = (t - t[i]) / (t[i+1] - t[i])
-    # 3. Return: (1 - alpha) * pos[i] + alpha * pos[i+1]
-    # Use jnp.searchsorted() to find interval
-    raise NotImplementedError("interpolate_position not implemented")
+    # Find the interval containing t
+    idx = jnp.searchsorted(traj.times, t) - 1
+    idx = jnp.clip(idx, 0, len(traj.times) - 2)
+
+    # Get interval bounds
+    t0 = traj.times[idx]
+    t1 = traj.times[idx + 1]
+    pos0 = traj.positions[idx]
+    pos1 = traj.positions[idx + 1]
+
+    # Compute interpolation weight
+    alpha = (t - t0) / (t1 - t0 + 1e-10)  # Add small epsilon to avoid division by zero
+    alpha = jnp.clip(alpha, 0.0, 1.0)
+
+    # Linear interpolation
+    return (1 - alpha) * pos0 + alpha * pos1
 
 
 def interpolate_velocity(traj: Trajectory, t: float) -> jnp.ndarray:
@@ -93,8 +110,22 @@ def interpolate_velocity(traj: Trajectory, t: float) -> jnp.ndarray:
     Returns:
         (2,) array of interpolated [vx, vy] velocity
     """
-    # TODO: Implement (same as interpolate_position but for velocities)
-    raise NotImplementedError("interpolate_velocity not implemented")
+    # Find the interval containing t
+    idx = jnp.searchsorted(traj.times, t) - 1
+    idx = jnp.clip(idx, 0, len(traj.times) - 2)
+
+    # Get interval bounds
+    t0 = traj.times[idx]
+    t1 = traj.times[idx + 1]
+    vel0 = traj.velocities[idx]
+    vel1 = traj.velocities[idx + 1]
+
+    # Compute interpolation weight
+    alpha = (t - t0) / (t1 - t0 + 1e-10)
+    alpha = jnp.clip(alpha, 0.0, 1.0)
+
+    # Linear interpolation
+    return (1 - alpha) * vel0 + alpha * vel1
 
 
 def compute_path_length(traj: Trajectory) -> float:
@@ -114,13 +145,15 @@ def compute_path_length(traj: Trajectory) -> float:
         ... )
         >>> compute_path_length(traj)  # Should return 2.0
     """
-    # TODO: Implement path length computation
-    # Sum ||pos[i+1] - pos[i]|| for i in range(T-1)
-    # Use jnp.linalg.norm() or jnp.sqrt(jnp.sum((pos[i+1] - pos[i])**2))
-    raise NotImplementedError("compute_path_length not implemented")
+    # Compute distances between consecutive points
+    deltas = traj.positions[1:] - traj.positions[:-1]
+    distances = jnp.linalg.norm(deltas, axis=1)
+    return jnp.sum(distances)
 
 
-def get_partial_trajectory(traj: Trajectory, t_start: float, t_end: float) -> Trajectory:
+def get_partial_trajectory(
+    traj: Trajectory, t_start: float, t_end: float
+) -> Trajectory:
     """Extract a partial trajectory within a time window.
 
     Args:
@@ -135,11 +168,46 @@ def get_partial_trajectory(traj: Trajectory, t_start: float, t_end: float) -> Tr
         If t_start or t_end don't align with existing timestamps,
         interpolated points will be added at the boundaries.
     """
-    # TODO: Implement partial trajectory extraction
-    # 1. Find indices where t_start <= times <= t_end
-    # 2. Interpolate at t_start and t_end if needed
-    # 3. Return new Trajectory with filtered/interpolated points
-    raise NotImplementedError("get_partial_trajectory not implemented")
+    # Find indices within the time window
+    mask = (traj.times >= t_start) & (traj.times <= t_end)
+    indices = jnp.where(mask)[0]
+
+    # Build new trajectory points
+    new_times = []
+    new_positions = []
+    new_velocities = []
+
+    # Add interpolated point at t_start if needed
+    if t_start < traj.times[0]:
+        t_start = traj.times[0]
+    if t_start > traj.times[0] and (
+        len(indices) == 0 or traj.times[indices[0]] > t_start
+    ):
+        new_times.append(t_start)
+        new_positions.append(interpolate_position(traj, t_start))
+        new_velocities.append(interpolate_velocity(traj, t_start))
+
+    # Add existing points in range
+    for idx in indices:
+        new_times.append(traj.times[idx])
+        new_positions.append(traj.positions[idx])
+        new_velocities.append(traj.velocities[idx])
+
+    # Add interpolated point at t_end if needed
+    if t_end > traj.times[-1]:
+        t_end = traj.times[-1]
+    if t_end < traj.times[-1] and (
+        len(indices) == 0 or traj.times[indices[-1]] < t_end
+    ):
+        new_times.append(t_end)
+        new_positions.append(interpolate_position(traj, t_end))
+        new_velocities.append(interpolate_velocity(traj, t_end))
+
+    return Trajectory(
+        times=jnp.array(new_times),
+        positions=jnp.stack(new_positions) if new_positions else jnp.zeros((0, 2)),
+        velocities=jnp.stack(new_velocities) if new_velocities else jnp.zeros((0, 2)),
+    )
 
 
 def get_duration(traj: Trajectory) -> float:
@@ -151,9 +219,7 @@ def get_duration(traj: Trajectory) -> float:
     Returns:
         Scalar duration (t_final - t_initial)
     """
-    # TODO: Implement
-    # return traj.times[-1] - traj.times[0]
-    raise NotImplementedError("get_duration not implemented")
+    return traj.times[-1] - traj.times[0]
 
 
 def get_start_position(traj: Trajectory) -> jnp.ndarray:
@@ -194,9 +260,20 @@ def concatenate_trajectories(traj1: Trajectory, traj2: Trajectory) -> Trajectory
         The second trajectory's times will be shifted so it starts
         where the first trajectory ends.
     """
-    # TODO: Implement trajectory concatenation
-    # 1. Get traj1 final time: t_final = traj1.times[-1]
-    # 2. Shift traj2 times: new_times2 = traj2.times - traj2.times[0] + t_final
-    # 3. Concatenate arrays: jnp.concatenate([traj1.times, new_times2])
-    # 4. Return new Trajectory
-    raise NotImplementedError("concatenate_trajectories not implemented")
+    # Get final time of first trajectory
+    t_final = traj1.times[-1]
+
+    # Shift second trajectory times to start where first ends
+    time_offset = t_final - traj2.times[0]
+    new_times2 = traj2.times + time_offset
+
+    # Concatenate all arrays
+    concatenated_times = jnp.concatenate([traj1.times, new_times2])
+    concatenated_positions = jnp.concatenate([traj1.positions, traj2.positions])
+    concatenated_velocities = jnp.concatenate([traj1.velocities, traj2.velocities])
+
+    return Trajectory(
+        times=concatenated_times,
+        positions=concatenated_positions,
+        velocities=concatenated_velocities,
+    )

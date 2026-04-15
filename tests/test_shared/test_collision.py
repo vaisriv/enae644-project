@@ -54,12 +54,7 @@ class TestPointInPolygon:
     def test_point_inside_square(self):
         """Test point inside square polygon."""
         point = jnp.array([2.5, 2.5])
-        vertices = jnp.array([
-            [1.0, 1.0],
-            [4.0, 1.0],
-            [4.0, 4.0],
-            [1.0, 4.0]
-        ])
+        vertices = jnp.array([[1.0, 1.0], [4.0, 1.0], [4.0, 4.0], [1.0, 4.0]])
         assert collision.point_in_polygon(point, vertices)
 
 
@@ -82,7 +77,9 @@ class TestSegmentCircleCollision:
         seg_end = jnp.array([2.0, 0.0])
         center = jnp.array([5.0, 5.0])
         radius = 1.0
-        assert not collision.segment_circle_collision(seg_start, seg_end, center, radius)
+        assert not collision.segment_circle_collision(
+            seg_start, seg_end, center, radius
+        )
 
 
 class TestSegmentSegmentIntersection:

@@ -3,11 +3,10 @@
 import pytest
 from src.simulation.config import (
     SimulationConfig,
-    WorkspaceConfig,
     load_config,
     _validate_config,
     config_to_dict,
-    dict_to_config
+    dict_to_config,
 )
 
 
@@ -76,4 +75,7 @@ class TestConfigSerialization:
         """Test converting config to dict and back."""
         config_dict = config_to_dict(minimal_simulation_config)
         restored_config = dict_to_config(config_dict)
-        assert restored_config.simulation.random_seed == minimal_simulation_config.simulation.random_seed
+        assert (
+            restored_config.simulation.random_seed
+            == minimal_simulation_config.simulation.random_seed
+        )

@@ -26,6 +26,7 @@ class TestRunSimulation:
     def test_agent_d_wins_scenario(self, jax_key):
         """Test scenario where Agent D reaches goal first."""
         from tests.fixtures.sample_configs import config_agent_d_wins
+
         config = config_agent_d_wins()
         result = run_simulation(config, jax_key)
         assert result.winner == "Agent_D"
@@ -34,6 +35,7 @@ class TestRunSimulation:
     def test_agent_i_wins_scenario(self, jax_key):
         """Test scenario where Agent I intercepts."""
         from tests.fixtures.sample_configs import config_agent_i_wins
+
         config = config_agent_i_wins()
         result = run_simulation(config, jax_key)
         assert result.winner == "Agent_I"
@@ -42,6 +44,7 @@ class TestRunSimulation:
     def test_timeout_scenario(self, jax_key):
         """Test scenario that times out."""
         from tests.fixtures.sample_configs import config_timeout
+
         config = config_timeout()
         result = run_simulation(config, jax_key)
         assert result.winner == "timeout"

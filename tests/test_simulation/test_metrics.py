@@ -2,14 +2,15 @@
 
 import pytest
 import jax.numpy as jnp
-from src.simulation import metrics
 
 
 class TestComputeObserverAccuracy:
     """Tests for compute_observer_accuracy function."""
 
     @pytest.mark.skip(reason="Not implemented yet")
-    def test_observer_accuracy_calculation(self, mock_observer_net, straight_line_trajectory):
+    def test_observer_accuracy_calculation(
+        self, mock_observer_net, straight_line_trajectory
+    ):
         """Test observer accuracy computation."""
         # This will test the metrics once implemented
         pass
@@ -33,7 +34,7 @@ class TestComputeBeliefEntropy:
     def test_entropy_uniform_distribution(self):
         """Test entropy of uniform distribution."""
         # Uniform distribution over 3 goals should have max entropy
-        belief = jnp.array([1/3, 1/3, 1/3])
+        belief = jnp.array([1 / 3, 1 / 3, 1 / 3])
         # entropy = -sum(p * log(p)) = -3 * (1/3 * log(1/3)) = log(3)
         pass
 

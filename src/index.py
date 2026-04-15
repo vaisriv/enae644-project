@@ -7,10 +7,8 @@ This script runs the complete simulation pipeline:
 4. Save outputs (trajectories, metrics, visualizations)
 """
 
-import argparse
 from pathlib import Path
 import jax
-import jax.numpy as jnp
 
 # TODO: Import when modules are implemented
 # from src.simulation.controller import run_simulation
@@ -83,7 +81,7 @@ def main():
     # ========================================================================
     # TODO: Use config.simulation.random_seed
     key = jax.random.PRNGKey(42)
-    print(f"\nInitialized JAX PRNG with seed: 42")
+    print("\nInitialized JAX PRNG with seed: 42")
 
     # ========================================================================
     # 4. Run simulation

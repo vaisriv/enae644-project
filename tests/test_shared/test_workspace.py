@@ -3,14 +3,12 @@
 import pytest
 import jax.numpy as jnp
 from src.shared.workspace import (
-    Workspace,
     CircleObstacle,
-    PolygonObstacle,
     create_workspace,
     is_in_bounds,
     is_collision_free,
     is_in_workspace,
-    sample_collision_free_point
+    sample_collision_free_point,
 )
 
 

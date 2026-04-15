@@ -26,10 +26,7 @@ def euclidean_distance(p1: jnp.ndarray, p2: jnp.ndarray) -> float:
         >>> euclidean_distance(jnp.array([0.0, 0.0]), jnp.array([3.0, 4.0]))
         5.0
     """
-    # TODO: Implement
-    # return jnp.linalg.norm(p1 - p2)
-    # OR: return jnp.sqrt(jnp.sum((p1 - p2) ** 2))
-    raise NotImplementedError("euclidean_distance not implemented")
+    return jnp.linalg.norm(p1 - p2)
 
 
 @jax.jit
@@ -43,9 +40,7 @@ def squared_distance(p1: jnp.ndarray, p2: jnp.ndarray) -> float:
     Returns:
         Scalar squared distance ||p1 - p2||^2
     """
-    # TODO: Implement
-    # return jnp.sum((p1 - p2) ** 2)
-    raise NotImplementedError("squared_distance not implemented")
+    return jnp.sum((p1 - p2) ** 2)
 
 
 @jax.jit
@@ -62,10 +57,8 @@ def angle_between(v1: jnp.ndarray, v2: jnp.ndarray) -> float:
     Note:
         Uses arccos of normalized dot product.
     """
-    # TODO: Implement
-    # cos_angle = jnp.dot(v1, v2) / (jnp.linalg.norm(v1) * jnp.linalg.norm(v2))
-    # return jnp.arccos(jnp.clip(cos_angle, -1.0, 1.0))
-    raise NotImplementedError("angle_between not implemented")
+    cos_angle = jnp.dot(v1, v2) / (jnp.linalg.norm(v1) * jnp.linalg.norm(v2))
+    return jnp.arccos(jnp.clip(cos_angle, -1.0, 1.0))
 
 
 @jax.jit
@@ -83,10 +76,8 @@ def angle_to_point(from_point: jnp.ndarray, to_point: jnp.ndarray) -> float:
         >>> angle_to_point(jnp.array([0.0, 0.0]), jnp.array([1.0, 1.0]))
         0.7853981633974483  # π/4
     """
-    # TODO: Implement
-    # delta = to_point - from_point
-    # return jnp.arctan2(delta[1], delta[0])
-    raise NotImplementedError("angle_to_point not implemented")
+    delta = to_point - from_point
+    return jnp.arctan2(delta[1], delta[0])
 
 
 @jax.jit
@@ -102,17 +93,13 @@ def normalize_vector(v: jnp.ndarray) -> jnp.ndarray:
     Note:
         Returns zero vector if input is zero vector.
     """
-    # TODO: Implement
-    # norm = jnp.linalg.norm(v)
-    # return jnp.where(norm > 1e-8, v / norm, v)
-    raise NotImplementedError("normalize_vector not implemented")
+    norm = jnp.linalg.norm(v)
+    return jnp.where(norm > 1e-8, v / norm, v)
 
 
 @jax.jit
 def point_to_segment_distance(
-    point: jnp.ndarray,
-    seg_start: jnp.ndarray,
-    seg_end: jnp.ndarray
+    point: jnp.ndarray, seg_start: jnp.ndarray, seg_end: jnp.ndarray
 ) -> float:
     """Compute minimum distance from a point to a line segment.
 
@@ -127,21 +114,24 @@ def point_to_segment_distance(
     Note:
         Projects point onto line, then clamps to segment bounds.
     """
-    # TODO: Implement
-    # 1. Compute vector from seg_start to seg_end: v = seg_end - seg_start
-    # 2. Compute vector from seg_start to point: w = point - seg_start
-    # 3. Compute projection parameter: t = dot(w, v) / dot(v, v)
-    # 4. Clamp t to [0, 1]
-    # 5. Compute closest point: closest = seg_start + t * v
-    # 6. Return distance from point to closest
-    raise NotImplementedError("point_to_segment_distance not implemented")
+    v = seg_end - seg_start
+    w = point - seg_start
+
+    # Compute projection parameter
+    v_dot_v = jnp.dot(v, v)
+    t = jnp.where(v_dot_v > 1e-8, jnp.dot(w, v) / v_dot_v, 0.0)
+
+    # Clamp to segment bounds
+    t = jnp.clip(t, 0.0, 1.0)
+
+    # Compute closest point and distance
+    closest = seg_start + t * v
+    return jnp.linalg.norm(point - closest)
 
 
 @jax.jit
 def closest_point_on_segment(
-    point: jnp.ndarray,
-    seg_start: jnp.ndarray,
-    seg_end: jnp.ndarray
+    point: jnp.ndarray, seg_start: jnp.ndarray, seg_end: jnp.ndarray
 ) -> jnp.ndarray:
     """Find the closest point on a line segment to a given point.
 
@@ -153,8 +143,18 @@ def closest_point_on_segment(
     Returns:
         (2,) array - closest point on segment
     """
-    # TODO: Implement (similar to point_to_segment_distance but return point)
-    raise NotImplementedError("closest_point_on_segment not implemented")
+    v = seg_end - seg_start
+    w = point - seg_start
+
+    # Compute projection parameter
+    v_dot_v = jnp.dot(v, v)
+    t = jnp.where(v_dot_v > 1e-8, jnp.dot(w, v) / v_dot_v, 0.0)
+
+    # Clamp to segment bounds
+    t = jnp.clip(t, 0.0, 1.0)
+
+    # Return closest point on segment
+    return seg_start + t * v
 
 
 @jax.jit
@@ -173,9 +173,7 @@ def cross_product_2d(v1: jnp.ndarray, v2: jnp.ndarray) -> float:
         Negative = v2 is clockwise from v1
         Zero = collinear
     """
-    # TODO: Implement
-    # return v1[0] * v2[1] - v1[1] * v2[0]
-    raise NotImplementedError("cross_product_2d not implemented")
+    return v1[0] * v2[1] - v1[1] * v2[0]
 
 
 @jax.jit
@@ -193,21 +191,13 @@ def rotate_vector(v: jnp.ndarray, angle: float) -> jnp.ndarray:
         >>> rotate_vector(jnp.array([1.0, 0.0]), jnp.pi / 2)
         array([0., 1.])  # Rotated 90 degrees
     """
-    # TODO: Implement using rotation matrix
-    # cos_a, sin_a = jnp.cos(angle), jnp.sin(angle)
-    # return jnp.array([
-    #     cos_a * v[0] - sin_a * v[1],
-    #     sin_a * v[0] + cos_a * v[1]
-    # ])
-    raise NotImplementedError("rotate_vector not implemented")
+    cos_a, sin_a = jnp.cos(angle), jnp.sin(angle)
+    return jnp.array([cos_a * v[0] - sin_a * v[1], sin_a * v[0] + cos_a * v[1]])
 
 
 @jax.jit
 def point_in_triangle(
-    point: jnp.ndarray,
-    v0: jnp.ndarray,
-    v1: jnp.ndarray,
-    v2: jnp.ndarray
+    point: jnp.ndarray, v0: jnp.ndarray, v1: jnp.ndarray, v2: jnp.ndarray
 ) -> bool:
     """Check if a point is inside a triangle using barycentric coordinates.
 
@@ -218,6 +208,23 @@ def point_in_triangle(
     Returns:
         True if point is inside triangle, False otherwise
     """
-    # TODO: Implement using barycentric coordinates or cross products
-    # Method: Check if point is on the same side of all three edges
-    raise NotImplementedError("point_in_triangle not implemented")
+    # Use cross products to check if point is on same side of all edges
+    # Edge v0->v1
+    edge1 = v1 - v0
+    to_point1 = point - v0
+    cross1 = cross_product_2d(edge1, to_point1)
+
+    # Edge v1->v2
+    edge2 = v2 - v1
+    to_point2 = point - v1
+    cross2 = cross_product_2d(edge2, to_point2)
+
+    # Edge v2->v0
+    edge3 = v0 - v2
+    to_point3 = point - v2
+    cross3 = cross_product_2d(edge3, to_point3)
+
+    # Point is inside if all cross products have same sign
+    return (cross1 >= 0) & (cross2 >= 0) & (cross3 >= 0) | (cross1 <= 0) & (
+        cross2 <= 0
+    ) & (cross3 <= 0)
