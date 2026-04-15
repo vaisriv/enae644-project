@@ -11,21 +11,44 @@ perSystem.devshell.mkShell {
     '';
 
     commands = [
-        # typst helper
+        # helpers
+        ## python
         {
-            name = "typ";
-            category = "[submission]";
-            help = "compile (and watch) submission typst report";
+            name = "pyr";
+            category = "[python]";
+            help = "run";
+            command = "uv run adversarial-planning";
+        }
+        {
+            name = "pyl";
+            category = "[python]";
+            help = "lsp";
+            command = "ty check -W src";
+        }
+        {
+            name = "pys";
+            category = "[python]";
+            help = "compile submission";
+            command = "nix run .#adversarial-planning";
+        }
+        ## typst
+        {
+            name = "tyr";
+            category = "[typst]";
+            help = "run";
             command = "nix run .#report.watch";
         }
-
-        # python helper
         {
-            name = "py";
-            category = "[submission]";
-            help = "run submission python script";
-            # command = "nix run .#adversarial-planning";
-            command = "uv run adversarial-planning";
+            name = "tyl";
+            category = "[typst]";
+            help = "lsp";
+            command = "tinymist test --no-dashboard --ignore-system-fonts --watch reports/main.typ";
+        }
+        {
+            name = "tys";
+            category = "[typst]";
+            help = "compile submission";
+            command = "nix run .#report.build";
         }
     ];
 
@@ -49,5 +72,14 @@ perSystem.devshell.mkShell {
         ty
     ];
 
-    env = [ ];
+    env = [
+        {
+            name = "TYPST_FONT_PATHS";
+            prefix = with pkgs; lib.makeSearchPath "share/fonts/opentype" [
+                newcomputermodern
+                tex-gyre.cursor
+                tex-gyre.termes
+            ];
+        }
+    ];
 }
