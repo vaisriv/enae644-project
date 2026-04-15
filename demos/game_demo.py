@@ -164,7 +164,7 @@ def demo_simple_chase():
         trajectory_I=result.trajectory_I,
         belief_history=result.belief_history,
         save_path=str(output_dir / "figures" / "animation.gif"),
-        fps=10
+        fps=10,
     )
     print(f"  Saved: {output_dir / 'figures' / 'animation.gif'}")
 

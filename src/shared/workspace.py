@@ -79,7 +79,7 @@ def is_in_bounds(point: jnp.ndarray, bounds: jnp.ndarray) -> bool:
     """
     x_in_bounds = (bounds[0, 0] <= point[0]) & (point[0] <= bounds[0, 1])
     y_in_bounds = (bounds[1, 0] <= point[1]) & (point[1] <= bounds[1, 1])
-    return x_in_bounds & y_in_bounds
+    return x_in_bounds & y_in_bounds  # type: ignore[return-value]
 
 
 def is_collision_free(point: jnp.ndarray, obstacles: List[Obstacle]) -> bool:

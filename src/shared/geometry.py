@@ -40,7 +40,7 @@ def squared_distance(p1: jnp.ndarray, p2: jnp.ndarray) -> float:
     Returns:
         Scalar squared distance ||p1 - p2||^2
     """
-    return jnp.sum((p1 - p2) ** 2)
+    return jnp.sum((p1 - p2) ** 2)  # type: ignore[return-value]
 
 
 @jax.jit
@@ -58,7 +58,7 @@ def angle_between(v1: jnp.ndarray, v2: jnp.ndarray) -> float:
         Uses arccos of normalized dot product.
     """
     cos_angle = jnp.dot(v1, v2) / (jnp.linalg.norm(v1) * jnp.linalg.norm(v2))
-    return jnp.arccos(jnp.clip(cos_angle, -1.0, 1.0))
+    return jnp.arccos(jnp.clip(cos_angle, -1.0, 1.0))  # type: ignore[return-value]
 
 
 @jax.jit
@@ -77,7 +77,7 @@ def angle_to_point(from_point: jnp.ndarray, to_point: jnp.ndarray) -> float:
         0.7853981633974483  # π/4
     """
     delta = to_point - from_point
-    return jnp.arctan2(delta[1], delta[0])
+    return jnp.arctan2(delta[1], delta[0])  # type: ignore[return-value]
 
 
 @jax.jit
@@ -173,7 +173,7 @@ def cross_product_2d(v1: jnp.ndarray, v2: jnp.ndarray) -> float:
         Negative = v2 is clockwise from v1
         Zero = collinear
     """
-    return v1[0] * v2[1] - v1[1] * v2[0]
+    return v1[0] * v2[1] - v1[1] * v2[0]  # type: ignore[return-value]
 
 
 @jax.jit

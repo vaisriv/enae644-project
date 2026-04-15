@@ -30,7 +30,7 @@ def point_in_circle(point: jnp.ndarray, center: jnp.ndarray, radius: float) -> b
         This function is JIT-compilable.
     """
     distance = jnp.linalg.norm(point - center)
-    return distance <= radius
+    return distance <= radius  # type: ignore[return-value]
 
 
 def point_in_polygon(point: jnp.ndarray, vertices: jnp.ndarray) -> bool:
@@ -75,7 +75,7 @@ def point_in_polygon(point: jnp.ndarray, vertices: jnp.ndarray) -> bool:
         return count + jnp.where(crosses_y & crosses_x, 1, 0)
 
     crossing_count = jax.lax.fori_loop(0, n, check_edge, 0)
-    return (crossing_count % 2) == 1
+    return (crossing_count % 2) == 1  # type: ignore[return-value]
 
 
 def segment_circle_collision(
@@ -97,7 +97,7 @@ def segment_circle_collision(
         This function is JIT-compilable.
     """
     distance = point_to_segment_distance(center, seg_start, seg_end)
-    return distance <= radius
+    return distance <= radius  # type: ignore[return-value]
 
 
 def segment_polygon_collision(
@@ -171,7 +171,7 @@ def segment_segment_intersection(
     d4 = cross_product_2d(p4 - p3, p2 - p3)
 
     # Segments intersect if signs are opposite (or zero for touching)
-    return (d1 * d2 <= 0) & (d3 * d4 <= 0)
+    return (d1 * d2 <= 0) & (d3 * d4 <= 0)  # type: ignore[return-value]
 
 
 @jax.jit

@@ -1,1 +1,1 @@
-from src.index import *
+"""Package for adversarial motion planning simulation project."""

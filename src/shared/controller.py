@@ -181,7 +181,7 @@ class WaypointFollower(AgentController):
         t = current_state.time
 
         # Clamp time to trajectory bounds
-        t = jnp.clip(t, self.trajectory.times[0], self.trajectory.times[-1])
+        t = float(jnp.clip(t, self.trajectory.times[0], self.trajectory.times[-1]))
 
         # Interpolate velocity
         target_velocity = interpolate_velocity(self.trajectory, t)

@@ -148,7 +148,7 @@ def compute_path_length(traj: Trajectory) -> float:
     # Compute distances between consecutive points
     deltas = traj.positions[1:] - traj.positions[:-1]
     distances = jnp.linalg.norm(deltas, axis=1)
-    return jnp.sum(distances)
+    return jnp.sum(distances)  # type: ignore[return-value]
 
 
 def get_partial_trajectory(
@@ -179,7 +179,7 @@ def get_partial_trajectory(
 
     # Add interpolated point at t_start if needed
     if t_start < traj.times[0]:
-        t_start = traj.times[0]
+        t_start = float(traj.times[0])
     if t_start > traj.times[0] and (
         len(indices) == 0 or traj.times[indices[0]] > t_start
     ):
@@ -195,7 +195,7 @@ def get_partial_trajectory(
 
     # Add interpolated point at t_end if needed
     if t_end > traj.times[-1]:
-        t_end = traj.times[-1]
+        t_end = float(traj.times[-1])
     if t_end < traj.times[-1] and (
         len(indices) == 0 or traj.times[indices[-1]] < t_end
     ):
@@ -219,7 +219,7 @@ def get_duration(traj: Trajectory) -> float:
     Returns:
         Scalar duration (t_final - t_initial)
     """
-    return traj.times[-1] - traj.times[0]
+    return traj.times[-1] - traj.times[0]  # type: ignore[return-value]
 
 
 def get_start_position(traj: Trajectory) -> jnp.ndarray:

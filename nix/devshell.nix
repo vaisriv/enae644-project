@@ -29,7 +29,7 @@ perSystem.devshell.mkShell {
             name = "pyt";
             category = "[python]";
             help = "test";
-            command = "uv run coverage run --omit \"/nix/store/*\" -m pytest tests";
+            command = "uv run coverage run --omit \"/nix/store/*\" -m pytest tests -W ignore::UserWarning";
         }
         {
             name = "pys";

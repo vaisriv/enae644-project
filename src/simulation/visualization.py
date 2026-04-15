@@ -39,15 +39,15 @@ def plot_trajectories(
 
     # Plot workspace bounds
     bounds = workspace.bounds
-    ax.set_xlim(bounds[0, 0], bounds[0, 1])
-    ax.set_ylim(bounds[1, 0], bounds[1, 1])
+    ax.set_xlim(float(bounds[0, 0]), float(bounds[0, 1]))
+    ax.set_ylim(float(bounds[1, 0]), float(bounds[1, 1]))
     ax.set_aspect("equal")
 
     # Plot obstacles
     for obstacle in workspace.obstacles:
         if isinstance(obstacle, CircleObstacle):
             circle = patches.Circle(
-                obstacle.center,
+                (float(obstacle.center[0]), float(obstacle.center[1])),
                 obstacle.radius,
                 color="gray",
                 alpha=0.5,
@@ -105,8 +105,8 @@ def plot_trajectories(
     # Plot candidate goals
     for i, goal in enumerate(candidate_goals):
         ax.scatter(
-            goal[0],
-            goal[1],
+            float(goal[0]),
+            float(goal[1]),
             marker="x",
             s=200,
             color="orange",
@@ -116,8 +116,8 @@ def plot_trajectories(
 
     # Plot true goal
     ax.scatter(
-        true_goal[0],
-        true_goal[1],
+        float(true_goal[0]),
+        float(true_goal[1]),
         marker="*",
         s=500,
         color="gold",
@@ -164,7 +164,7 @@ def plot_belief_evolution(
     fig, ax = plt.subplots(figsize=(12, 6))
 
     # Plot each goal's probability over time
-    colors = plt.cm.tab10(range(num_goals))
+    colors = plt.cm.tab10(range(num_goals))  # type: ignore[attr-defined]
     for goal_id in range(num_goals):
         is_true = goal_id == true_goal_id
         label = f"Goal {goal_id}" + (" (TRUE)" if is_true else "")
@@ -368,8 +368,8 @@ def create_animation(
     # Setup workspace subplot
     # ========================================================================
     bounds = workspace.bounds
-    ax_workspace.set_xlim(bounds[0, 0], bounds[0, 1])
-    ax_workspace.set_ylim(bounds[1, 0], bounds[1, 1])
+    ax_workspace.set_xlim(float(bounds[0, 0]), float(bounds[0, 1]))
+    ax_workspace.set_ylim(float(bounds[1, 0]), float(bounds[1, 1]))
     ax_workspace.set_aspect("equal")
     ax_workspace.set_xlabel("X (m)", fontsize=12)
     ax_workspace.set_ylabel("Y (m)", fontsize=12)
@@ -380,7 +380,10 @@ def create_animation(
     for obstacle in workspace.obstacles:
         if isinstance(obstacle, CircleObstacle):
             circle = patches.Circle(
-                obstacle.center, obstacle.radius, color="gray", alpha=0.5
+                (float(obstacle.center[0]), float(obstacle.center[1])),
+                obstacle.radius,
+                color="gray",
+                alpha=0.5,
             )
             ax_workspace.add_patch(circle)
         elif isinstance(obstacle, PolygonObstacle):
