@@ -32,9 +32,9 @@ perSystem.devshell.mkShell {
             command = "uv run coverage run --omit \"/nix/store/*\" -m pytest tests -W ignore::UserWarning";
         }
         {
-            name = "pys";
+            name = "pyc";
             category = "[python]";
-            help = "compile submission";
+            help = "compile";
             command = "nix run .#adversarial-planning";
         }
         ## typst
@@ -52,9 +52,9 @@ perSystem.devshell.mkShell {
             command = "tinymist test --no-dashboard --ignore-system-fonts --watch reports/main.typ";
         }
         {
-            name = "tys";
+            name = "tyc";
             category = "[typst]";
-            help = "compile submission";
+            help = "compile";
             command = "nix run .#report.build";
         }
     ];
