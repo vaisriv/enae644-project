@@ -16,7 +16,7 @@ perSystem.devshell.mkShell {
             name = "typ";
             category = "[submission]";
             help = "compile (and watch) submission typst report";
-            command = "nix run .#watch-report";
+            command = "nix run .#report.watch";
         }
 
         # python helper
