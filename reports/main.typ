@@ -1,4 +1,4 @@
-#import "./bamdone-ieeeconf.typ": ieee
+#import "../lib/typst/bamdone-ieeeconf.typ": ieee
 
 #show: ieee.with(
     title: [ENAE644 Term Project],
