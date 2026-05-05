@@ -49,7 +49,7 @@ perSystem.devshell.mkShell {
             name = "tyl";
             category = "[typst]";
             help = "lsp";
-            command = "tinymist test --no-dashboard --ignore-system-fonts --watch reports/main.typ";
+            command = "tinymist test --no-dashboard --ignore-system-fonts --watch reports/main.typ --root=.";
         }
         {
             name = "tyc";
