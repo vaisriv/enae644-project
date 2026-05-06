@@ -31,12 +31,14 @@ nix run .#report.watch
 
 ## Common Commands
 
-```bash
-# Helper for running the simulation
-py                      # Executes Python program
+Helpers for running in dev-environment without doing a full nix rebuild
 
-# Helper for writing the report
-typ                     # Watch and compile Typst report
+```bash
+# Running the simulation
+pyr                     # Execute Python program
+
+# Continuously update report
+typ                     # Watch Typst report
 
 # Format code
 nix fmt                 # Format all files (Python, Nix, Typst, YAML, Markdown)
