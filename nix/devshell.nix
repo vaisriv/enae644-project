@@ -35,7 +35,7 @@ perSystem.devshell.mkShell {
             name = "pyc";
             category = "[python]";
             help = "compile";
-            command = "nix run .#adversarial-planning";
+            command = "nix build .#adversarial-planning";
         }
         ## typst
         {
