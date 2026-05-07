@@ -18,7 +18,7 @@ class TestLoadConfig:
         """Test loading a valid YAML configuration file."""
         config = load_config(sample_config_yaml)
         assert isinstance(config, SimulationConfig)
-        assert config.simulation.random_seed == 42
+        assert config.simulation_params.random_seed == 42
 
     @pytest.mark.skip(reason="Not implemented yet")
     def test_load_nonexistent_file(self):
@@ -33,28 +33,26 @@ class TestValidateConfig:
     @pytest.mark.skip(reason="Not implemented yet")
     def test_validate_valid_config(self, minimal_simulation_config):
         """Test validation passes for valid config."""
-        # Should not raise any exception
         _validate_config(minimal_simulation_config)
 
     @pytest.mark.skip(reason="Not implemented yet")
     def test_validate_true_goal_not_in_candidates(self, minimal_simulation_config):
         """Test validation fails when true goal not in candidate goals."""
-        # Modify config to make it invalid
-        minimal_simulation_config.deceptive_agent.true_goal = [99.0, 99.0]
+        minimal_simulation_config.deceptive_agent_config.true_goal = [99.0, 99.0]
         with pytest.raises(ValueError):
             _validate_config(minimal_simulation_config)
 
     @pytest.mark.skip(reason="Not implemented yet")
     def test_validate_deception_weight_out_of_range(self, minimal_simulation_config):
         """Test validation fails for deception weight outside [0, 1]."""
-        minimal_simulation_config.deceptive_agent.planner.deception_weight = 1.5
+        minimal_simulation_config.deceptive_agent_config.planner.deception_weight = 1.5
         with pytest.raises(ValueError):
             _validate_config(minimal_simulation_config)
 
     @pytest.mark.skip(reason="Not implemented yet")
     def test_validate_candidate_goals_mismatch(self, minimal_simulation_config):
         """Test validation fails when agent candidate goals don't match."""
-        minimal_simulation_config.interceptor_agent.candidate_goals = [[1.0, 1.0]]
+        minimal_simulation_config.interceptor_agent_config.candidate_goals = [[1.0, 1.0]]
         with pytest.raises(ValueError):
             _validate_config(minimal_simulation_config)
 
@@ -76,6 +74,6 @@ class TestConfigSerialization:
         config_dict = config_to_dict(minimal_simulation_config)
         restored_config = dict_to_config(config_dict)
         assert (
-            restored_config.simulation.random_seed
-            == minimal_simulation_config.simulation.random_seed
+            restored_config.simulation_params.random_seed
+            == minimal_simulation_config.simulation_params.random_seed
         )

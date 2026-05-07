@@ -11,13 +11,14 @@ from src.simulation.config import (
     ObstacleConfig,
     DeceptiveAgentConfig,
     InterceptorAgentConfig,
-    SimulationParameters,
+    SimulationParams,
     SimulationConfig,
     PlannerConfig,
     ObserverConfig,
     IRLConfig,
     ParticleFilterConfig,
     MPCConfig,
+    TrainingConfig,
 )
 from src.shared.workspace import Workspace, CircleObstacle, PolygonObstacle
 from src.shared.trajectory import Trajectory
@@ -202,7 +203,7 @@ def interceptor_agent_config():
 @pytest.fixture
 def simulation_parameters():
     """Default simulation parameters."""
-    return SimulationParameters(
+    return SimulationParams(
         timestep=0.1,
         max_time=10.0,  # Reduced for faster tests
         intercept_threshold=0.5,
@@ -221,9 +222,10 @@ def minimal_simulation_config(
     """Minimal valid simulation configuration for testing."""
     return SimulationConfig(
         workspace=workspace_config_simple,
-        deceptive_agent=deceptive_agent_config,
-        interceptor_agent=interceptor_agent_config,
-        simulation=simulation_parameters,
+        deceptive_agent_config=deceptive_agent_config,
+        interceptor_agent_config=interceptor_agent_config,
+        simulation_params=simulation_parameters,
+        training=TrainingConfig(),
     )
 
 
@@ -289,7 +291,7 @@ deceptive_agent:
     max_radius: 3.0
     deception_weight: 0.3
   observer:
-    checkpoint_path: "models/observer_test.eqx"
+    checkpoint_path: "outputs/models/observer_rnn.eqx"
     num_goals: 3
     hidden_size: 32
 
@@ -297,7 +299,7 @@ interceptor_agent:
   initial_position: [1.0, 9.0]
   candidate_goals: [[9.0, 9.0], [9.0, 1.0], [1.0, 9.0]]
   irl:
-    checkpoint_path: "models/irl_test.eqx"
+    checkpoint_path: "outputs/models/irl_reward.eqx"
     feature_dim: 16
     learning_rate: 0.001
   particle_filter:
@@ -316,6 +318,19 @@ simulation:
   intercept_threshold: 0.5
   goal_radius: 0.5
   random_seed: 42
+
+training:
+  observer:
+    hidden_dim: 32
+    num_epochs: 5
+    learning_rate: 0.001
+    batch_size: 8
+    samples_per_goal: 10
+  irl:
+    hidden_dim: 32
+    num_epochs: 5
+    learning_rate: 0.001
+    num_demonstrations: 10
 """
     config_path = test_data_dir / "test_config.yaml"
     config_path.write_text(config_content)
