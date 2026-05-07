@@ -340,4 +340,4 @@ Future enhancements that can build on this architecture:
 
 - Project root: `../../`
 - Source code: `../../src/` (implementation goes here)
-- Report: `../../reports/main.typ` (problem formalization)
+- Report: `../../reports/main.typ` (technical paper)

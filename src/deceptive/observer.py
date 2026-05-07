@@ -1,6 +1,8 @@
 """RNN observer network for trajectory-to-goal classification."""
 
-from typing import List, Tuple
+import pickle
+from pathlib import Path
+from typing import Any, List, Optional, Tuple
 
 import equinox as eqx
 import jax
@@ -9,6 +11,7 @@ import optax
 
 from src.simulation.config import ObserverConfig, ObserverTrainingConfig
 
+_SIDECAR_SUFFIX = ".optstate.pkl"
 
 class TrajectoryClassifier(eqx.Module):
     """GRU-based trajectory classifier for goal prediction.
@@ -47,11 +50,94 @@ class TrajectoryClassifier(eqx.Module):
         return jax.nn.softmax(logits)
 
 
+def save_obs_training_state(
+    checkpoint_path: str,
+    model: "TrajectoryClassifier",
+    opt_state,
+    epoch_completed: int,
+) -> None:
+    """Persist model weights and optimizer state so training can be resumed.
+
+    Saves two files:
+    - ``checkpoint_path``: Equinox leaf serialization of the model weights
+    - ``checkpoint_path + _SIDECAR_SUFFIX``: pickle of (opt_state, epoch_completed)
+    """
+    eqx.tree_serialise_leaves(checkpoint_path, model)
+    sidecar = str(checkpoint_path) + _SIDECAR_SUFFIX
+    with open(sidecar, "wb") as f:
+        pickle.dump({"opt_state": opt_state, "epoch_completed": epoch_completed}, f)
+
+
+def load_obs_training_state(
+    checkpoint_path: str,
+    config: ObserverTrainingConfig,
+) -> Optional[Tuple["TrajectoryClassifier", object, int]]:
+    """Load a previously saved training state, or return None if no model exists.
+
+    Three cases:
+    - No ``.eqx`` file → return None (fresh start).
+    - ``.eqx`` + sidecar both exist → full resume with weights, optimizer state,
+      and epoch counter.
+    - ``.eqx`` exists but no sidecar → weights-only resume: load model, create a
+      fresh optimizer state, and infer the completed epoch count from the loss CSV
+      (falls back to 0 if the CSV is absent).  Adam momentum is lost but the
+      trained weights are preserved.
+
+    Args:
+        checkpoint_path: Path used when saving (the ``.eqx`` file).
+        config: Must match the hidden_dim used during the original run.
+
+    Returns:
+        ``(model, opt_state, epoch_completed)`` or ``None`` if no checkpoint exists.
+    """
+    if not Path(checkpoint_path).exists():
+        return None
+
+    observer_cfg = ObserverConfig(
+        checkpoint_path=checkpoint_path,
+        num_goals=config.num_goals, # type: ignore[unresolved-attribute]
+        hidden_size=config.hidden_dim,
+    )
+    model = load_observer(checkpoint_path, observer_cfg)
+
+    sidecar = str(checkpoint_path) + _SIDECAR_SUFFIX
+    if Path(sidecar).exists():
+        with open(sidecar, "rb") as f:
+            data = pickle.load(f)
+        return model, data["opt_state"], data["epoch_completed"]
+
+    # Weights-only fallback: reconstruct a fresh optimizer state and estimate epoch
+    optimizer = optax.adam(config.learning_rate)
+    opt_state = optimizer.init(eqx.filter(model, eqx.is_array))
+    epoch_completed = _infer_epoch_from_loss_csv(checkpoint_path)
+    return model, opt_state, epoch_completed
+
+
+def _infer_epoch_from_loss_csv(checkpoint_path: str) -> int:
+    """Return the highest epoch number in the loss CSV adjacent to checkpoint_path."""
+    import csv as _csv
+
+    loss_csv = Path(checkpoint_path).parent / "observer_training_loss.csv"
+    if not loss_csv.exists():
+        return 0
+    try:
+        with open(loss_csv, newline="") as f:
+            rows = list(_csv.DictReader(f))
+        if rows:
+            return int(rows[-1]["epoch"]) + 1
+    except Exception:
+        pass
+    return 0
+
+
 def train_observer(
     dataset,  # TrajectoryDataset
     config: ObserverTrainingConfig,
     key,
-) -> Tuple[TrajectoryClassifier, List[float]]:
+    initial_model: Optional["TrajectoryClassifier"] = None,
+    initial_opt_state=None,
+    start_epoch: int = 0,
+) -> Tuple[TrajectoryClassifier, Any, List[float]]:
     """Train RNN observer on trajectory classification.
 
     Args:
@@ -111,7 +197,7 @@ def train_observer(
                 f"  Observer epoch {epoch:4d}/{config.num_epochs}  loss={mean_loss:.4f}"
             )
 
-    return model, loss_history
+    return model, opt_state, loss_history
 
 
 def load_observer(path: str, config: ObserverConfig) -> TrajectoryClassifier:

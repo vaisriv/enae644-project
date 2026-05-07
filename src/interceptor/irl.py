@@ -117,7 +117,7 @@ def _infer_epoch_from_loss_csv(checkpoint_path: str) -> int:
     """Return the highest epoch number in the loss CSV adjacent to checkpoint_path."""
     import csv as _csv
 
-    loss_csv = Path(checkpoint_path).parent.parent / "text" / "irl_training_loss.csv"
+    loss_csv = Path(checkpoint_path).parent / "irl_training_loss.csv"
     if not loss_csv.exists():
         return 0
     try:

@@ -45,7 +45,7 @@ def run_simulation(config: SimulationConfig, key: PRNGKey) -> SimulationResult:
     agent_D_config = config.deceptive_agent
     agent_I_config = config.interceptor_agent
 
-    # Load trained models (checkpoints written by: uv run adversarial-planning-train)
+    # Load trained models (checkpoints written by: uv run adversarial-train)
     observer_net = load_observer(
         agent_D_config.observer.checkpoint_path,
         config.training.observer,

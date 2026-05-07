@@ -10,7 +10,7 @@ Training is separated from simulation via two CLI entry points:
 
 | Command                             | Source                  | Description                         |
 | ----------------------------------- | ----------------------- | ----------------------------------- |
-| `uv run adversarial-planning-train` | `src/training.py:train` | Train all models, write checkpoints |
+| `uv run adversarial-train` | `src/training.py:train` | Train all models, write checkpoints |
 | `uv run adversarial-planning`       | `src/index.py:main`     | Load checkpoints, run simulation    |
 
 This separation ensures:
@@ -28,7 +28,7 @@ This separation ensures:
 ```python
 def train(config_path: str = "data/configs/experiment_simple_obstacle.yaml") -> None:
     """
-    Full offline training pipeline. Invoked via: uv run adversarial-planning-train
+    Full offline training pipeline. Invoked via: uv run adversarial-train
     Trains the RNN observer and IRL reward function, then saves checkpoints.
     """
     config = load_config(config_path)
@@ -43,8 +43,8 @@ def train(config_path: str = "data/configs/experiment_simple_obstacle.yaml") -> 
     _train_irl_from_config(config, irl_key)
 
     print("Training complete.")
-    print(f"  Observer checkpoint : outputs/models/observer_rnn.eqx")
-    print(f"  IRL checkpoint      : outputs/models/irl_reward.eqx")
+    print(f"  Observer checkpoint : data/models/observer_rnn.eqx")
+    print(f"  IRL checkpoint      : data/models/irl_reward.eqx")
 ```
 
 ### Observer Training Helper
@@ -76,8 +76,8 @@ def _train_observer_from_config(config: SimulationConfig, key: PRNGKey) -> None:
     observer = train_observer(dataset=dataset, config=training_cfg, key=train_key)
 
     # Save checkpoint
-    Path("outputs/models").mkdir(parents=True, exist_ok=True)
-    eqx.tree_serialise_leaves("outputs/models/observer_rnn.eqx", observer)
+    Path("data/models").mkdir(parents=True, exist_ok=True)
+    eqx.tree_serialise_leaves("data/models/observer_rnn.eqx", observer)
 ```
 
 ### IRL Training Helper
@@ -111,8 +111,8 @@ def _train_irl_from_config(config: SimulationConfig, key: PRNGKey) -> None:
     )
 
     # Save checkpoint
-    Path("outputs/models").mkdir(parents=True, exist_ok=True)
-    eqx.tree_serialise_leaves("outputs/models/irl_reward.eqx", irl_model)
+    Path("data/models").mkdir(parents=True, exist_ok=True)
+    eqx.tree_serialise_leaves("data/models/irl_reward.eqx", irl_model)
 ```
 
 ---
@@ -122,8 +122,8 @@ def _train_irl_from_config(config: SimulationConfig, key: PRNGKey) -> None:
 Before running the simulation, `main()` checks that both checkpoints exist and exits with a clear error if either is missing.
 
 ```python
-_OBSERVER_PATH = Path("outputs/models/observer_rnn.eqx")
-_IRL_PATH      = Path("outputs/models/irl_reward.eqx")
+_OBSERVER_PATH = Path("data/models/observer_rnn.eqx")
+_IRL_PATH      = Path("data/models/irl_reward.eqx")
 
 def _check_checkpoints() -> None:
     missing = [p for p in [_OBSERVER_PATH, _IRL_PATH] if not p.exists()]
@@ -131,7 +131,7 @@ def _check_checkpoints() -> None:
         paths = ", ".join(str(p) for p in missing)
         raise RuntimeError(
             f"Model checkpoints not found: {paths}\n"
-            f"Run training first:  uv run adversarial-planning-train"
+            f"Run training first:  uv run adversarial-train"
         )
 
 def main() -> None:
@@ -190,14 +190,14 @@ The training loop implementation lives in `src/interceptor/irl.py` as `maximum_e
 
 ## Checkpoint Files
 
-All model artifacts are written to `outputs/models/`, treated as a generated directory (not committed to version control).
+All model artifacts are written to `data/models/`, treated as a generated directory (not committed to version control).
 
 | File                              | Contents                                                        |
 | --------------------------------- | --------------------------------------------------------------- |
-| `outputs/models/observer_rnn.eqx` | Trained `TrajectoryClassifier` weights (Equinox pytree leaves)  |
-| `outputs/models/irl_reward.eqx`   | Trained `LearnedRewardFunction` weights (Equinox pytree leaves) |
+| `data/models/observer_rnn.eqx` | Trained `TrajectoryClassifier` weights (Equinox pytree leaves)  |
+| `data/models/irl_reward.eqx`   | Trained `LearnedRewardFunction` weights (Equinox pytree leaves) |
 
-The `.eqx` format stores only the array leaves of the pytree. The model structure is not stored — it is reconstructed from `SimulationConfig.training` at load time. The same YAML config must be used for both `adversarial-planning-train` and `adversarial-planning`.
+The `.eqx` format stores only the array leaves of the pytree. The model structure is not stored — it is reconstructed from `SimulationConfig.training` at load time. The same YAML config must be used for both `adversarial-train` and `adversarial-planning`.
 
 ---
 

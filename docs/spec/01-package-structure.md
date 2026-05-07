@@ -60,7 +60,7 @@ src/
 def train(config_path: str = "data/configs/experiment_simple_obstacle.yaml") -> None:
     """
     Full training pipeline: generate data, train models, save checkpoints.
-    Called via: uv run adversarial-planning-train
+    Called via: uv run adversarial-train
     """
     ...
 
@@ -75,8 +75,8 @@ def train_irl_from_config(config: SimulationConfig, key: PRNGKey) -> LearnedRewa
 
 **Checkpoint paths** (relative to project root):
 
-- Observer: `outputs/models/observer_rnn.eqx`
-- IRL reward: `outputs/models/irl_reward.eqx`
+- Observer: `data/models/observer_rnn.eqx`
+- IRL reward: `data/models/irl_reward.eqx`
 
 **Behavior**:
 

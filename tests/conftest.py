@@ -291,7 +291,7 @@ deceptive_agent:
     max_radius: 3.0
     deception_weight: 0.3
   observer:
-    checkpoint_path: "outputs/models/observer_rnn.eqx"
+    checkpoint_path: "data/models/observer_rnn.eqx"
     num_goals: 3
     hidden_size: 32
 
@@ -299,7 +299,7 @@ interceptor_agent:
   initial_position: [1.0, 9.0]
   candidate_goals: [[9.0, 9.0], [9.0, 1.0], [1.0, 9.0]]
   irl:
-    checkpoint_path: "outputs/models/irl_reward.eqx"
+    checkpoint_path: "data/models/irl_reward.eqx"
     feature_dim: 16
     learning_rate: 0.001
   particle_filter:
