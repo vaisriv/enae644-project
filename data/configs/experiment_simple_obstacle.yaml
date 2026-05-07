@@ -1,0 +1,77 @@
+workspace:
+    bounds:
+        - - 0.0
+          - 10.0
+        - - 0.0
+          - 10.0
+    obstacles:
+        - type: circle
+          params: {center: [5.0, 5.0], radius: 1.0}
+deceptive_agent:
+    initial_position:
+        - 1.0
+        - 1.0
+    true_goal:
+        - 9.0
+        - 9.0
+    candidate_goals:
+        - - 9.0
+          - 9.0
+        - - 9.0
+          - 1.0
+        - - 1.0
+          - 9.0
+    planner:
+        max_iterations: 2000
+        step_size: 0.5
+        goal_radius: 0.5
+        goal_bias_probability: 0.1
+        gamma: 2.0
+        max_radius: 3.0
+        deception_weight: 0.5
+    observer:
+        checkpoint_path: outputs/models/observer_rnn.eqx
+        num_goals: 3
+        hidden_size: 64
+interceptor_agent:
+    initial_position:
+        - 1.0
+        - 9.0
+    candidate_goals:
+        - - 9.0
+          - 9.0
+        - - 9.0
+          - 1.0
+        - - 1.0
+          - 9.0
+    irl:
+        checkpoint_path: outputs/models/irl_reward.eqx
+        feature_dim: 64
+        learning_rate: 0.001
+    particle_filter:
+        num_particles: 200
+        resample_threshold: 0.5
+    mpc:
+        horizon: 15
+        dt: 0.1
+        control_weight: 0.01
+        learning_rate: 0.05
+        max_iterations: 50
+simulation:
+    timestep: 0.1
+    max_time: 60.0
+    intercept_threshold: 0.5
+    goal_radius: 0.5
+    random_seed: 42
+training:
+    observer:
+        hidden_dim: 64
+        num_epochs: 80
+        learning_rate: 0.001
+        batch_size: 32
+        samples_per_goal: 150
+    irl:
+        hidden_dim: 64
+        num_epochs: 40
+        learning_rate: 0.001
+        num_demonstrations: 200

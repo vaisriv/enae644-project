@@ -24,7 +24,9 @@ class SimulationResult:
         completion_time: Time when simulation ended
         trajectory_D: Complete trajectory of deceptive agent
         trajectory_I: Complete trajectory of interceptor agent
-        belief_history: List of belief distributions over time
+        belief_history: List of particle-filter belief distributions over time
+        observer_belief_history: List of RNN observer goal probabilities over time
+            (one (num_goals,) array per step; empty list when no observer was used)
         metrics: Dictionary of performance metrics
     """
 
@@ -33,6 +35,7 @@ class SimulationResult:
     trajectory_D: Trajectory
     trajectory_I: Trajectory
     belief_history: List[jnp.ndarray]
+    observer_belief_history: List[jnp.ndarray]
     metrics: Dict[str, float]
 
 
@@ -62,55 +65,70 @@ def run_simulation(config: SimulationConfig, key: jnp.ndarray) -> SimulationResu
            - Check termination conditions
         6. Compute metrics and generate result
     """
+    from src.deceptive.observer import load_observer
+    from src.deceptive.planner import adversarial_rrt_star
+    from src.interceptor.irl import load_irl_model
+    from src.interceptor.mpc import game_theoretic_mpc
+    from src.interceptor.particle_filter import ParticleFilter
+    from src.shared.trajectory import interpolate_position
+    from src.simulation.config import create_workspace_from_config  # type: ignore[attr-defined]
+    from src.simulation.metrics import (
+        compute_deception_effectiveness,
+        compute_goal_inference_accuracy,
+        compute_interception_distance,
+        compute_interception_efficiency,
+        compute_observer_accuracy,
+        compute_path_length_ratio,
+        compute_time_to_convergence,
+    )
+
     # ========================================================================
     # 1. Initialize workspace and agents
     # ========================================================================
-    workspace_config = config.workspace
     agent_D_config = config.deceptive_agent_config
     agent_I_config = config.interceptor_agent_config
     sim_params = config.simulation_params
 
-    # TODO: Create workspace from config
-    # workspace = create_workspace_from_config(workspace_config)
-    raise NotImplementedError("Workspace creation not implemented yet")
+    workspace = create_workspace_from_config(config.workspace)
+    goals = jnp.array(agent_D_config.candidate_goals)
+    true_goal = jnp.array(agent_D_config.true_goal)
+    true_goal_id = agent_D_config.candidate_goals.index(agent_D_config.true_goal)
 
     # ========================================================================
     # 2. Load pre-trained models
     # ========================================================================
-    # TODO: Load observer RNN network
-    # observer_net = load_observer_network(agent_D_config.observer.checkpoint_path)
-
-    # TODO: Load IRL reward model
-    # irl_model = load_irl_model(agent_I_config.irl.checkpoint_path)
+    observer_net = load_observer(
+        agent_D_config.observer.checkpoint_path, agent_D_config.observer
+    )
+    irl_model = load_irl_model(agent_I_config.irl.checkpoint_path, agent_I_config.irl)
 
     # ========================================================================
-    # 3. Agent D plans full trajectory (offline)
+    # 3. Agent D plans full deceptive trajectory (offline)
     # ========================================================================
     key, plan_key = jax.random.split(key)
-
-    # TODO: Call adversarial RRT* planner
-    # trajectory_D = adversarial_rrt_star(
-    #     start=jnp.array(agent_D_config.initial_position),
-    #     goal=jnp.array(agent_D_config.true_goal),
-    #     workspace=workspace,
-    #     observer_net=observer_net,
-    #     alpha=agent_D_config.planner.deception_weight,
-    #     config=agent_D_config.planner,
-    #     key=plan_key
-    # )
+    print("  Planning deceptive trajectory (RRT*)...")
+    trajectory_D = adversarial_rrt_star(
+        start=jnp.array(agent_D_config.initial_position),
+        goal=true_goal,
+        workspace=workspace,
+        observer_net=observer_net,
+        true_goal_id=true_goal_id,
+        alpha=agent_D_config.planner.deception_weight,
+        config=agent_D_config.planner,
+        key=plan_key,
+    )
+    print(f"  Agent D trajectory: {trajectory_D.positions.shape[0]} waypoints")
 
     # ========================================================================
     # 4. Initialize Agent I's particle filter
     # ========================================================================
     key, pf_key = jax.random.split(key)
-
-    # TODO: Create particle filter instance
-    # particle_filter = ParticleFilter(
-    #     num_particles=agent_I_config.particle_filter.num_particles,
-    #     candidate_goals=jnp.array(agent_I_config.candidate_goals),
-    #     learned_model=irl_model,
-    #     key=pf_key
-    # )
+    particle_filter = ParticleFilter(
+        num_particles=agent_I_config.particle_filter.num_particles,
+        candidate_goals=goals,
+        learned_model=irl_model,
+        key=pf_key,
+    )
 
     # ========================================================================
     # 5. Main simulation loop
@@ -119,114 +137,122 @@ def run_simulation(config: SimulationConfig, key: jnp.ndarray) -> SimulationResu
     dt = sim_params.timestep
     max_time = sim_params.max_time
 
-    # Initialize Agent I state
     x_I = jnp.array(agent_I_config.initial_position)
 
-    # Logging arrays
-    times_log = [0.0]
-    trajectory_log_D = []  # Will collect Agent D positions
-    trajectory_log_I = [x_I]  # Agent I positions
-    belief_history = []  # Belief distributions over time
+    times_log: List[float] = [t]
+    pos_log_D: List[jnp.ndarray] = []
+    pos_log_I: List[jnp.ndarray] = [x_I]
+    belief_history: List[jnp.ndarray] = []
+    observer_belief_history: List[jnp.ndarray] = []
 
-    winner = "timeout"  # Default if no termination condition is met
+    _OBS_WINDOW = 20  # max positions fed to observer per step (matches planner)
+
+    winner = "timeout"
 
     while t < max_time:
-        # --------------------------------------------------------------------
-        # Agent D: Execute pre-planned trajectory
-        # --------------------------------------------------------------------
-        # TODO: Interpolate position from trajectory at current time t
-        # x_D = interpolate_position(trajectory_D, t)
-        # trajectory_log_D.append(x_D)
+        # Agent D: follow pre-planned trajectory
+        x_D = interpolate_position(trajectory_D, t)
+        pos_log_D.append(x_D)
 
-        # --------------------------------------------------------------------
-        # Agent I: Observe Agent D
-        # --------------------------------------------------------------------
-        # TODO: Update particle filter with observation
-        # key, update_key = jax.random.split(key)
-        # particle_filter.update(x_D, update_key)
-        # belief = particle_filter.get_belief_distribution()
-        # belief_history.append(belief)
+        # RNN observer: classify current trajectory prefix
+        obs_input = jnp.stack(pos_log_D[-_OBS_WINDOW:])
+        observer_belief_history.append(observer_net(obs_input))
 
-        # --------------------------------------------------------------------
-        # Agent I: Plan control via game-theoretic MPC
-        # --------------------------------------------------------------------
-        # TODO: Compute control action
-        # key, mpc_key = jax.random.split(key)
-        # u_I = game_theoretic_mpc(
-        #     current_state=x_I,
-        #     belief=belief,
-        #     agent_D_position=x_D,
-        #     learned_model=irl_model,
-        #     horizon=agent_I_config.mpc.horizon,
-        #     config=agent_I_config.mpc,
-        #     key=mpc_key
-        # )
+        # Agent I: update belief
+        key, pf_key = jax.random.split(key)
+        particle_filter.update(x_D, pf_key)
+        belief = particle_filter.get_belief_distribution()
+        belief_history.append(belief)
 
-        # --------------------------------------------------------------------
-        # Agent I: Execute control
-        # --------------------------------------------------------------------
-        # TODO: Integrate motion with kinematic constraints
-        # x_I = integrate_motion(x_I, u_I, dt)
-        # trajectory_log_I.append(x_I)
+        # Agent I: plan control via game-theoretic MPC
+        key, mpc_key = jax.random.split(key)
+        u_I = game_theoretic_mpc(
+            current_state=x_I,
+            belief=belief,
+            agent_D_position=x_D,
+            learned_model=irl_model,
+            goals=goals,
+            workspace=workspace,
+            horizon=agent_I_config.mpc.horizon,
+            config=agent_I_config.mpc,
+            key=mpc_key,
+        )
 
-        # --------------------------------------------------------------------
-        # Check termination conditions
-        # --------------------------------------------------------------------
-        true_goal = jnp.array(agent_D_config.true_goal)
+        # Agent I: execute control
+        x_I = x_I + u_I * dt
+        pos_log_I.append(x_I)
 
-        # Condition 1: Agent D reaches goal
-        # TODO: Uncomment when x_D is available
-        # if jnp.linalg.norm(x_D - true_goal) < sim_params.goal_radius:
-        #     winner = "Agent_D"
-        #     break
+        # Termination checks
+        if float(jnp.linalg.norm(x_D - true_goal)) < sim_params.goal_radius:
+            winner = "Agent_D"
+            break
+        if float(jnp.linalg.norm(x_D - x_I)) < sim_params.intercept_threshold:
+            winner = "Agent_I"
+            break
 
-        # Condition 2: Agent I intercepts Agent D
-        # TODO: Uncomment when x_D is available
-        # if jnp.linalg.norm(x_D - x_I) < sim_params.intercept_threshold:
-        #     winner = "Agent_I"
-        #     break
-
-        # Advance time
         t += dt
         times_log.append(t)
 
     # ========================================================================
-    # 6. Generate results and compute metrics
+    # 6. Build trajectories
     # ========================================================================
-    # TODO: Convert logged positions to Trajectory objects
-    # final_trajectory_D = create_trajectory_from_positions(
-    #     jnp.array(times_log[:len(trajectory_log_D)]),
-    #     jnp.array(trajectory_log_D)
-    # )
-    # final_trajectory_I = create_trajectory_from_positions(
-    #     jnp.array(times_log),
-    #     jnp.array(trajectory_log_I)
-    # )
+    # Align lengths
+    n_steps = min(len(times_log), len(pos_log_D), len(pos_log_I))
+    times_arr = jnp.array(times_log[:n_steps])
+    final_trajectory_D = create_trajectory(times_arr, jnp.stack(pos_log_D[:n_steps]))
+    final_trajectory_I = create_trajectory(times_arr, jnp.stack(pos_log_I[:n_steps]))
 
-    # TODO: Compute all performance metrics
-    # metrics = compute_all_metrics(
-    #     trajectory_D=final_trajectory_D,
-    #     trajectory_I=final_trajectory_I,
-    #     belief_history=belief_history,
-    #     observer_net=observer_net,
-    #     true_goal=true_goal
-    # )
+    # ========================================================================
+    # 7. Compute metrics
+    # ========================================================================
+    # Build optimal (straight-line) trajectory for path length ratio
+    start_D = jnp.array(agent_D_config.initial_position)
+    optimal_positions = jnp.stack([start_D, true_goal])
+    optimal_times = jnp.array([0.0, float(jnp.linalg.norm(true_goal - start_D)) * 0.1])
+    optimal_traj = create_trajectory(optimal_times, optimal_positions)
 
-    # For now, return placeholder result
-    raise NotImplementedError(
-        "Main simulation loop not fully implemented. "
-        "Need to implement: workspace creation, model loading, "
-        "adversarial RRT*, particle filter, MPC planning, and metrics."
+    obs_accuracy = compute_observer_accuracy(
+        observer_net, final_trajectory_D, true_goal_id
     )
+    path_ratio = compute_path_length_ratio(final_trajectory_D, optimal_traj)
+    min_dist = compute_interception_distance(final_trajectory_D, final_trajectory_I)
+    goal_inf_acc = compute_goal_inference_accuracy(belief_history, true_goal_id)
+    ttc = compute_time_to_convergence(belief_history)
+    deception_score = compute_deception_effectiveness(
+        obs_accuracy, path_ratio, agent_D_config.planner.deception_weight
+    )
+    intercept_eff = compute_interception_efficiency(min_dist, ttc, t)
 
-    # return SimulationResult(
-    #     winner=winner,
-    #     completion_time=t,
-    #     trajectory_D=final_trajectory_D,
-    #     trajectory_I=final_trajectory_I,
-    #     belief_history=belief_history,
-    #     metrics=metrics
-    # )
+    metrics = {
+        "completion_time": t,
+        "observer_accuracy": obs_accuracy,
+        "path_length_ratio": path_ratio,
+        "min_interception_distance": min_dist,
+        "goal_inference_accuracy": goal_inf_acc,
+        "time_to_convergence": ttc,
+        "deception_effectiveness": deception_score,
+        "interception_efficiency": intercept_eff,
+        "distance_traveled_D": float(
+            jnp.sum(
+                jnp.linalg.norm(jnp.diff(final_trajectory_D.positions, axis=0), axis=1)
+            )
+        ),
+        "distance_traveled_I": float(
+            jnp.sum(
+                jnp.linalg.norm(jnp.diff(final_trajectory_I.positions, axis=0), axis=1)
+            )
+        ),
+    }
+
+    return SimulationResult(
+        winner=winner,
+        completion_time=t,
+        trajectory_D=final_trajectory_D,
+        trajectory_I=final_trajectory_I,
+        belief_history=belief_history,
+        observer_belief_history=observer_belief_history,
+        metrics=metrics,
+    )
 
 
 def _check_goal_reached(
@@ -421,5 +447,6 @@ def run_game_with_controllers(
         trajectory_D=trajectory_D,
         trajectory_I=trajectory_I,
         belief_history=belief_history,
+        observer_belief_history=[],
         metrics=metrics,
     )

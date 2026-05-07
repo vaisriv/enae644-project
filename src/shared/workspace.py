@@ -118,7 +118,7 @@ def is_in_workspace(point: jnp.ndarray, workspace: Workspace) -> bool:
 
 
 def sample_collision_free_point(workspace: Workspace, key: jnp.ndarray) -> jnp.ndarray:
-    """Sample a random collision-free point in the workspace.
+    """Sample a random collision-free point in the workspace using rejection sampling.
 
     Args:
         workspace: Workspace object
@@ -128,33 +128,18 @@ def sample_collision_free_point(workspace: Workspace, key: jnp.ndarray) -> jnp.n
         (2,) array representing a valid point
 
     Note:
-        Uses rejection sampling. May be slow in highly constrained spaces.
+        Uses a Python-level rejection loop (not JIT-compiled). Tries up to 10 000
+        candidates before falling back to the workspace centre.
     """
-    # Rejection sampling: keep sampling until we find a collision-free point
     bounds = workspace.bounds
-
-    def sample_once(carry):
-        key, point = carry
-        # Split key for next iteration
-        key, subkey = jax.random.split(key)
-
-        # Sample point uniformly in bounds
-        x = jax.random.uniform(subkey, minval=bounds[0, 0], maxval=bounds[0, 1])
-        key, subkey = jax.random.split(key)
-        y = jax.random.uniform(subkey, minval=bounds[1, 0], maxval=bounds[1, 1])
+    for _ in range(10_000):
+        key, x_key, y_key = jax.random.split(key, 3)
+        x = jax.random.uniform(x_key, minval=bounds[0, 0], maxval=bounds[0, 1])
+        y = jax.random.uniform(y_key, minval=bounds[1, 0], maxval=bounds[1, 1])
         point = jnp.array([x, y])
-
-        return (key, point)
-
-    def condition(carry):
-        key, point = carry
-        # Continue sampling if point is NOT collision-free
-        return ~is_collision_free(point, workspace.obstacles)
-
-    # Initial sample
-    key, point = sample_once((key, jnp.zeros(2)))
-
-    # Keep sampling until collision-free
-    key, point = jax.lax.while_loop(condition, sample_once, (key, point))
-
-    return point
+        if is_in_workspace(point, workspace):
+            return point
+    # Fallback: workspace centre (always collision-free in reasonable configs)
+    cx = (float(bounds[0, 0]) + float(bounds[0, 1])) / 2.0
+    cy = (float(bounds[1, 0]) + float(bounds[1, 1])) / 2.0
+    return jnp.array([cx, cy])

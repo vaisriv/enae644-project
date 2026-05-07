@@ -8,10 +8,10 @@ Specifies the offline training pipeline for both learned models — the RNN surr
 
 Training is separated from simulation via two CLI entry points:
 
-| Command | Source | Description |
-|---|---|---|
+| Command                             | Source                  | Description                         |
+| ----------------------------------- | ----------------------- | ----------------------------------- |
 | `uv run adversarial-planning-train` | `src/training.py:train` | Train all models, write checkpoints |
-| `uv run adversarial-planning` | `src/index.py:main` | Load checkpoints, run simulation |
+| `uv run adversarial-planning`       | `src/index.py:main`     | Load checkpoints, run simulation    |
 
 This separation ensures:
 
@@ -154,19 +154,19 @@ Both use `eqx.tree_deserialise_leaves` with a model skeleton reconstructed from 
 
 The training loop implementation lives in `src/deceptive/observer.py` as `train_observer`. The procedure is:
 
-1. Generate optimal (non-deceptive) RRT* trajectories to each candidate goal via `generate_optimal_trajectories`
+1. Generate optimal (non-deceptive) RRT\* trajectories to each candidate goal via `generate_optimal_trajectories`
 2. Apply augmentation during training: Gaussian noise (σ=0.05), partial truncation (10–90%), time warping
 3. Minimise cross-entropy loss with Adam over batched samples
 
 **Hyperparameters** (defaults in `TrainingConfig`, overridden by YAML `training.observer`):
 
-| Parameter | Default |
-|---|---|
-| Hidden dim | 64 |
-| Learning rate | 1e-3 |
-| Batch size | 32 |
-| Epochs | 100 |
-| Samples per goal | 200 |
+| Parameter        | Default |
+| ---------------- | ------- |
+| Hidden dim       | 64      |
+| Learning rate    | 1e-3    |
+| Batch size       | 32      |
+| Epochs           | 100     |
+| Samples per goal | 200     |
 
 ---
 
@@ -174,17 +174,17 @@ The training loop implementation lives in `src/deceptive/observer.py` as `train_
 
 The training loop implementation lives in `src/interceptor/irl.py` as `maximum_entropy_irl`. The procedure is:
 
-1. Generate non-deceptive RRT* demonstrations via `generate_irl_demonstrations`
+1. Generate non-deceptive RRT\* demonstrations via `generate_irl_demonstrations`
 2. Run maximum entropy IRL: alternate between soft value iteration (to compute expected features under current reward) and gradient updates (empirical − expected features)
 
 **Hyperparameters** (defaults in `IRLConfig`, overridden by YAML `training.irl`):
 
-| Parameter | Default |
-|---|---|
-| Hidden dim | 64 |
-| Learning rate | 1e-3 |
-| Epochs | 50 |
-| Num demonstrations | 500 |
+| Parameter          | Default |
+| ------------------ | ------- |
+| Hidden dim         | 64      |
+| Learning rate      | 1e-3    |
+| Epochs             | 50      |
+| Num demonstrations | 500     |
 
 ---
 
@@ -192,10 +192,10 @@ The training loop implementation lives in `src/interceptor/irl.py` as `maximum_e
 
 All model artifacts are written to `outputs/models/`, treated as a generated directory (not committed to version control).
 
-| File | Contents |
-|---|---|
-| `outputs/models/observer_rnn.eqx` | Trained `TrajectoryClassifier` weights (Equinox pytree leaves) |
-| `outputs/models/irl_reward.eqx` | Trained `LearnedRewardFunction` weights (Equinox pytree leaves) |
+| File                              | Contents                                                        |
+| --------------------------------- | --------------------------------------------------------------- |
+| `outputs/models/observer_rnn.eqx` | Trained `TrajectoryClassifier` weights (Equinox pytree leaves)  |
+| `outputs/models/irl_reward.eqx`   | Trained `LearnedRewardFunction` weights (Equinox pytree leaves) |
 
 The `.eqx` format stores only the array leaves of the pytree. The model structure is not stored — it is reconstructed from `SimulationConfig.training` at load time. The same YAML config must be used for both `adversarial-planning-train` and `adversarial-planning`.
 

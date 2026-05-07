@@ -227,6 +227,7 @@ class TestRunGameWithControllers:
         assert hasattr(result, "trajectory_D")
         assert hasattr(result, "trajectory_I")
         assert hasattr(result, "belief_history")
+        assert hasattr(result, "observer_belief_history")
         assert hasattr(result, "metrics")
 
         # Check field types
@@ -234,6 +235,7 @@ class TestRunGameWithControllers:
         assert isinstance(result.completion_time, (float, int))
         assert isinstance(result.metrics, dict)
         assert isinstance(result.belief_history, list)
+        assert isinstance(result.observer_belief_history, list)
 
     def test_trajectories_recorded(self, simple_workspace):
         """Test that trajectories are properly recorded."""
@@ -274,11 +276,11 @@ class TestRunSimulation:
     """Tests for run_simulation function."""
 
     def test_simulation_initialization(self, minimal_simulation_config, jax_key):
-        """Test simulation can be initialized from config."""
-        # This test will check that run_simulation can at least start
-        # even if it hits NotImplementedError in stubs
-        with pytest.raises(NotImplementedError):
-            result = run_simulation(minimal_simulation_config, jax_key)
+        """Test simulation raises FileNotFoundError when checkpoints are missing."""
+        # run_simulation now fully implemented; without trained checkpoints it
+        # should fail with FileNotFoundError on the missing model files.
+        with pytest.raises((NotImplementedError, FileNotFoundError)):
+            run_simulation(minimal_simulation_config, jax_key)
 
 
 class TestSimulationResult:
@@ -292,6 +294,7 @@ class TestSimulationResult:
             trajectory_D=straight_line_trajectory,
             trajectory_I=straight_line_trajectory,
             belief_history=[jnp.array([0.5, 0.5])],
+            observer_belief_history=[jnp.array([0.5, 0.5])],
             metrics={"test_metric": 1.0},
         )
 
@@ -300,4 +303,5 @@ class TestSimulationResult:
         assert result.trajectory_D is not None
         assert result.trajectory_I is not None
         assert len(result.belief_history) == 1
+        assert len(result.observer_belief_history) == 1
         assert "test_metric" in result.metrics

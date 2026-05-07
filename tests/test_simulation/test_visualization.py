@@ -69,7 +69,7 @@ class TestPlotBeliefEvolution:
 
         plot_belief_evolution(
             belief_history=belief_history,
-            candidate_goals=candidate_goals,
+            goals=candidate_goals,
             save_path=str(save_path),
         )
 
@@ -173,10 +173,10 @@ class TestSaveTrajectories:
             next(reader)  # skip header
             first_row = next(reader)
 
-            assert first_row[0] == "Agent_D"    # agent name
-            assert float(first_row[1]) == 0.0   # time
-            assert float(first_row[2]) == 0.0   # x
-            assert float(first_row[3]) == 0.0   # y
+            assert first_row[0] == "Agent_D"  # agent name
+            assert float(first_row[1]) == 0.0  # time
+            assert float(first_row[2]) == 0.0  # x
+            assert float(first_row[3]) == 0.0  # y
 
 
 class TestSaveMetricsCSV:

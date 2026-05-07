@@ -107,43 +107,65 @@ def plot_workspace_with_trajectories(
 
 def plot_belief_evolution(
     belief_history: List[jnp.ndarray],
-    candidate_goals: jnp.ndarray,
+    goals: jnp.ndarray,
+    observer_belief_history: Optional[List[jnp.ndarray]] = None,
     save_path: Optional[str] = None,
 ):
     """Plot belief distribution evolution over simulation steps.
 
+    When ``observer_belief_history`` is provided, renders two side-by-side panels:
+    the particle-filter belief (left) and the RNN observer goal probabilities (right).
+    Otherwise renders a single panel.
+
     Args:
-        belief_history: List of (num_goals,) belief distributions
-        candidate_goals: (num_goals, 2) array of candidate goal positions
-                         (used for labelling; number of rows = number of goals)
+        belief_history: List of (num_goals,) particle-filter belief distributions
+        goals: (num_goals, 2) array of candidate goal positions (for labels)
+        observer_belief_history: Optional list of (num_goals,) RNN observer
+            probability vectors, one per simulation step
         save_path: Optional path to save figure
     """
-    beliefs = jnp.stack(belief_history, axis=0)
-    num_goals = beliefs.shape[1]
-    steps = jnp.arange(len(belief_history))
+    has_observer = bool(observer_belief_history)
+    ncols = 2 if has_observer else 1
+    fig, axes = plt.subplots(1, ncols, figsize=(7 * ncols, 5), sharey=True)
+    if ncols == 1:
+        axes = [axes]  # type: ignore[list-item]
 
-    fig, ax = plt.subplots(figsize=(12, 6))
+    colors = plt.cm.tab10(range(len(belief_history[0])))  # type: ignore[attr-defined]
+    num_goals = int(jnp.array(belief_history[0]).shape[0])
 
-    colors = plt.cm.tab10(range(num_goals))  # type: ignore[attr-defined]
-    for goal_id in range(num_goals):
-        ax.plot(
-            steps,
-            beliefs[:, goal_id],
-            label=f"Goal {goal_id}",
-            linewidth=2,
-            color=colors[goal_id],
-            alpha=0.8,
+    def _draw_panel(ax, history: List[jnp.ndarray], title: str) -> None:
+        data = jnp.stack(history, axis=0)
+        steps = jnp.arange(len(history))
+        for goal_id in range(num_goals):
+            label = f"Goal {goal_id} ({float(goals[goal_id, 0]):.1f}, {float(goals[goal_id, 1]):.1f})"
+            ax.plot(
+                steps,
+                data[:, goal_id],
+                label=label,
+                linewidth=2,
+                color=colors[goal_id],
+                alpha=0.85,
+            )
+        ax.axhline(
+            y=1 / num_goals,
+            color="gray",
+            linestyle=":",
+            linewidth=1,
+            alpha=0.5,
+            label="uniform",
         )
+        ax.set_xlabel("Simulation Step", fontsize=11)
+        ax.set_ylabel("Probability", fontsize=11)
+        ax.set_title(title, fontsize=12, fontweight="bold")
+        ax.set_ylim(0, 1.05)
+        ax.legend(loc="best", fontsize=9)
+        ax.grid(True, alpha=0.3)
 
-    ax.axhline(y=0.5, color="gray", linestyle=":", linewidth=1, alpha=0.5, label="p=0.5")
+    _draw_panel(axes[0], belief_history, "Particle Filter Belief")
+    if has_observer:
+        _draw_panel(axes[1], observer_belief_history, "RNN Observer Probabilities")  # type: ignore[arg-type]
 
-    ax.set_xlabel("Simulation Step", fontsize=12)
-    ax.set_ylabel("Belief Probability", fontsize=12)
-    ax.set_title("Goal Belief Evolution", fontsize=14, fontweight="bold")
-    ax.set_ylim(0, 1)
-    ax.legend(loc="best", fontsize=10)
-    ax.grid(True, alpha=0.3)
-
+    plt.tight_layout()
     if save_path:
         plt.savefig(save_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
@@ -314,8 +336,12 @@ def create_animation(
             polygon = patches.Polygon(obstacle.vertices, color="gray", alpha=0.5)
             ax_workspace.add_patch(polygon)
 
-    (line_D,) = ax_workspace.plot([], [], "b-", linewidth=2, alpha=0.5, label="Agent D Path")
-    (line_I,) = ax_workspace.plot([], [], "r-", linewidth=2, alpha=0.5, label="Agent I Path")
+    (line_D,) = ax_workspace.plot(
+        [], [], "b-", linewidth=2, alpha=0.5, label="Agent D Path"
+    )
+    (line_I,) = ax_workspace.plot(
+        [], [], "r-", linewidth=2, alpha=0.5, label="Agent I Path"
+    )
     (marker_D,) = ax_workspace.plot([], [], "bo", markersize=15, label="Agent D")
     (marker_I,) = ax_workspace.plot([], [], "ro", markersize=15, label="Agent I")
     ax_workspace.legend(loc="upper right", fontsize=10)

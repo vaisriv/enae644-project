@@ -14,11 +14,11 @@ from src.shared.workspace import Workspace, CircleObstacle, PolygonObstacle
 from src.shared.controller import SimpleGoalController, AgentState
 from src.simulation.controller import run_game_with_controllers
 from src.simulation.visualization import (
-    plot_trajectories,
+    plot_workspace_with_trajectories,
     plot_belief_evolution,
     plot_distance_over_time,
     create_animation,
-    save_trajectories_csv,
+    save_trajectories,
     save_metrics_csv,
 )
 
@@ -103,7 +103,7 @@ def demo_simple_chase():
 
     # Create output directory
     print("\n[4/7] Creating output directory...")
-    output_dir = Path("outputs/demo")
+    output_dir = Path("outputs/demo/naive")
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "figures").mkdir(exist_ok=True)
     (output_dir / "text").mkdir(exist_ok=True)
@@ -113,10 +113,9 @@ def demo_simple_chase():
     print("\n[5/7] Saving data...")
 
     # CSV exports
-    save_trajectories_csv(
-        result.trajectory_D,
-        result.trajectory_I,
-        str(output_dir / "text" / "trajectories.csv"),
+    save_trajectories(
+        trajectories={"Agent_D": result.trajectory_D, "Agent_I": result.trajectory_I},
+        save_path=str(output_dir / "text" / "trajectories.csv"),
     )
     print(f"  Saved: {output_dir / 'text' / 'trajectories.csv'}")
 
@@ -127,13 +126,11 @@ def demo_simple_chase():
     print("\n[6/7] Generating visualizations...")
 
     # Plot trajectories
-    candidate_goals = [goal_D, jnp.array([2.0, 18.0])]  # True goal + decoy
-    plot_trajectories(
+    candidate_goals = jnp.stack([goal_D, jnp.array([2.0, 18.0])])  # True goal + decoy
+    plot_workspace_with_trajectories(
         workspace=workspace,
-        trajectory_D=result.trajectory_D,
-        trajectory_I=result.trajectory_I,
-        candidate_goals=candidate_goals,
-        true_goal=goal_D,
+        trajectories=[result.trajectory_D, result.trajectory_I],
+        goals=candidate_goals,
         save_path=str(output_dir / "figures" / "trajectories.png"),
     )
     print(f"  Saved: {output_dir / 'figures' / 'trajectories.png'}")
@@ -141,8 +138,7 @@ def demo_simple_chase():
     # Plot belief evolution
     plot_belief_evolution(
         belief_history=result.belief_history,
-        times=result.trajectory_I.times,
-        true_goal_id=0,
+        goals=candidate_goals,
         save_path=str(output_dir / "figures" / "belief_evolution.png"),
     )
     print(f"  Saved: {output_dir / 'figures' / 'belief_evolution.png'}")
@@ -224,19 +220,17 @@ def demo_goal_race():
 
     # Create output directory
     print("\n[4/5] Saving results...")
-    output_dir = Path("outputs/demo_race")
+    output_dir = Path("outputs/demo/race")
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "figures").mkdir(exist_ok=True)
 
     # Save trajectory plot
     print("\n[5/5] Generating visualization...")
-    candidate_goals = [goal_D, goal_I]
-    plot_trajectories(
+    candidate_goals = jnp.stack([goal_D, goal_I])
+    plot_workspace_with_trajectories(
         workspace=workspace,
-        trajectory_D=result.trajectory_D,
-        trajectory_I=result.trajectory_I,
-        candidate_goals=candidate_goals,
-        true_goal=goal_D,
+        trajectories=[result.trajectory_D, result.trajectory_I],
+        goals=candidate_goals,
         save_path=str(output_dir / "figures" / "race_trajectories.png"),
     )
     print(f"  Saved: {output_dir / 'figures' / 'race_trajectories.png'}")

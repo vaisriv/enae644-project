@@ -1,6 +1,5 @@
 """Tests for workspace utilities."""
 
-import pytest
 import jax.numpy as jnp
 from src.shared.workspace import (
     CircleObstacle,
@@ -125,34 +124,22 @@ class TestIsInWorkspace:
 class TestSampleCollisionFreePoint:
     """Tests for sample_collision_free_point function."""
 
-    @pytest.mark.skip(
-        reason="JAX tracing issue in source code - needs fix in sample_collision_free_point"
-    )
     def test_sample_in_empty_workspace(self, simple_workspace, jax_key):
         """Test sampling in workspace with no obstacles."""
         point = sample_collision_free_point(simple_workspace, jax_key)
         assert is_in_workspace(point, simple_workspace)
 
-    @pytest.mark.skip(
-        reason="JAX tracing issue in source code - needs fix in sample_collision_free_point"
-    )
     def test_sample_with_obstacles(self, workspace_with_circle_obstacle, jax_key):
         """Test sampling in workspace with obstacles."""
         point = sample_collision_free_point(workspace_with_circle_obstacle, jax_key)
         assert is_in_workspace(point, workspace_with_circle_obstacle)
 
-    @pytest.mark.skip(
-        reason="JAX tracing issue in source code - needs fix in sample_collision_free_point"
-    )
     def test_sample_multiple_points(self, simple_workspace, jax_key_sequence):
         """Test sampling multiple collision-free points."""
         for key in jax_key_sequence[:5]:
             point = sample_collision_free_point(simple_workspace, key)
             assert is_in_workspace(point, simple_workspace)
 
-    @pytest.mark.skip(
-        reason="JAX tracing issue in source code - needs fix in sample_collision_free_point"
-    )
     def test_sampled_point_in_bounds(self, simple_workspace, jax_key):
         """Test that sampled point is within workspace bounds."""
         point = sample_collision_free_point(simple_workspace, jax_key)

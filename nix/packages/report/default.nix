@@ -4,7 +4,4 @@
     system,
     ...
 }:
-{
-    build = pkgs.callPackage ./build.nix { inherit pkgs inputs system; };
-    watch = pkgs.callPackage ./watch.nix { inherit pkgs inputs system; };
-}
+pkgs.callPackage ./report.nix { inherit pkgs inputs system; }

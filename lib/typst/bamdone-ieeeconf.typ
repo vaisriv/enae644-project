@@ -59,7 +59,8 @@
     // Tables & figures
     show figure: set block(spacing: 15.5pt)
     show figure: set place(clearance: 15.5pt)
-    set figure(placement: top)
+    // set figure(placement: top)
+    set figure(placement: none)
     show figure.where(kind: table): set figure.caption(position: top)
     show figure.where(kind: table): set text(size: 8pt)
     show figure.caption.where(kind: table): smallcaps

@@ -23,15 +23,12 @@ nix develop
 nix run .#adversarial-planning
 
 # Compile the report
-nix run .#report.build
-
-# Or watch and continuously compile the report
-nix run .#report.watch
+nix run .#report
 ```
 
 ## Common Commands
 
-Helpers for running in dev-environment without doing a full nix rebuild
+Helpers for running in dev-environment without doing a full rebuild
 
 ```bash
 # Running the simulation

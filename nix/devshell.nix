@@ -42,7 +42,6 @@ perSystem.devshell.mkShell {
             name = "typ";
             category = "[typst]";
             help = "preview";
-            # command = "nix run .#report.watch";
             command = "tinymist preview reports/main.typ --root=.";
         }
         {
@@ -55,7 +54,7 @@ perSystem.devshell.mkShell {
             name = "tyc";
             category = "[typst]";
             help = "compile";
-            command = "nix run .#report.build";
+            command = "nix run .#report";
         }
     ];
 
@@ -76,6 +75,7 @@ perSystem.devshell.mkShell {
                 pyyaml
                 pytest
                 coverage
+                optax
             ]
         ))
         uv
