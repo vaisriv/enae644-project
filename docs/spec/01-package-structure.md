@@ -10,6 +10,7 @@ This document details the package organization, module responsibilities, import 
 src/
 ├── __init__.py                  # Root package initialization
 ├── index.py                     # Main entrypoint (existing, preserved)
+├── training.py                  # Model training entrypoints
 │
 ├── deceptive/                   # Deceptive Agent (Agent D) components
 │   ├── __init__.py              # Public API exports
@@ -48,6 +49,48 @@ src/
 ```
 
 ## Module Responsibilities
+
+### `src/training.py` - Model Training Entrypoints
+
+**Responsibility**: Trains both neural network models (RNN observer and IRL reward function), writes checkpoints to disk, and provides the `train` CLI entry point.
+
+**Public API**:
+
+```python
+def train(config_path: str = "data/configs/experiment_simple_obstacle.yaml") -> None:
+    """
+    Full training pipeline: generate data, train models, save checkpoints.
+    Called via: uv run adversarial-planning-train
+    """
+    ...
+
+def train_observer_from_config(config: SimulationConfig, key: PRNGKey) -> TrajectoryClassifier:
+    """Generate training data and train the RNN observer. Saves checkpoint."""
+    ...
+
+def train_irl_from_config(config: SimulationConfig, key: PRNGKey) -> LearnedRewardFunction:
+    """Generate demonstrations and train the IRL reward function. Saves checkpoint."""
+    ...
+```
+
+**Checkpoint paths** (relative to project root):
+
+- Observer: `outputs/models/observer_rnn.eqx`
+- IRL reward: `outputs/models/irl_reward.eqx`
+
+**Behavior**:
+
+1. Parse CLI args (config path, optional `--seed`)
+2. Load `SimulationConfig` from YAML
+3. Generate observer training dataset via `generate_optimal_trajectories`
+4. Train `TrajectoryClassifier` via `train_observer`, save with `eqx.tree_serialise_leaves`
+5. Generate IRL demonstrations via `adversarial_rrt_star` (with `alpha=0`)
+6. Train `LearnedRewardFunction` via `maximum_entropy_irl`, save with `eqx.tree_serialise_leaves`
+7. Print a summary of training metrics and checkpoint paths
+
+**Dependencies**: `src/deceptive/observer`, `src/interceptor/irl`, `src/data/generators`, `src/simulation/config`
+
+---
 
 ### `src/deceptive/` - Deceptive Agent Package
 
@@ -97,6 +140,10 @@ def train_observer(
     key: PRNGKey,
 ) -> TrajectoryClassifier:
     """Train RNN observer on trajectory classification task."""
+    ...
+
+def load_observer(path: str, config: TrainingConfig) -> TrajectoryClassifier:
+    """Load trained observer from Equinox checkpoint. See 05-deceptive-agent.md."""
     ...
 ```
 
@@ -193,7 +240,7 @@ class LearnedRewardFunction(eqx.Module):
 
 def maximum_entropy_irl(
     demonstrations: List[Trajectory],
-    goals: Array,                    # (num_demos, 2) corresponding goals
+    goals: Array,                    # (num_goals, 2) candidate goals
     config: IRLConfig,
     key: PRNGKey,
 ) -> LearnedRewardFunction:
@@ -208,6 +255,10 @@ def predict_trajectory(
     workspace: Workspace,
 ) -> Trajectory:
     """Predict trajectory under learned reward function."""
+    ...
+
+def load_irl_model(path: str, config: IRLConfig) -> LearnedRewardFunction:
+    """Load trained IRL reward function from Equinox checkpoint. See 06-interceptor-agent.md."""
     ...
 ```
 
@@ -661,11 +712,25 @@ def load_trajectory_dataset(path: str) -> TrajectoryDataset:
 ```python
 def generate_optimal_trajectories(
     workspace: Workspace,
-    goals: Array,
+    goals: Array,                    # (num_goals, 2)
     num_samples_per_goal: int,
     key: PRNGKey,
 ) -> TrajectoryDataset:
-    """Generate optimal (non-deceptive) trajectories for training."""
+    """Generate optimal (non-deceptive) RRT* trajectories for observer training."""
+    ...
+
+def generate_irl_demonstrations(
+    workspace: Workspace,
+    goals: Array,                    # (num_goals, 2)
+    num_demonstrations: int,
+    key: PRNGKey,
+) -> List[Trajectory]:
+    """
+    Generate non-deceptive trajectories as IRL training demonstrations.
+
+    Samples a random goal for each demonstration and plans an optimal path
+    using basic RRT* (alpha=0, no deception cost).
+    """
     ...
 ```
 
@@ -679,7 +744,8 @@ def generate_optimal_trajectories(
 2. **`src/shared/` is foundation**: Can only import from itself and standard libraries
 3. **Agent packages are independent**: `deceptive/` and `interceptor/` cannot import from each other
 4. **`src/simulation/` is top-level**: Can import from all packages
-5. **`src/data/` is independent**: Can only import from `shared/`
+5. **`src/training.py` is top-level**: Can import from all packages; not imported by any other module
+6. **`src/data/` is independent**: Can only import from `shared/`
 
 ### Allowed Import Patterns
 
@@ -715,7 +781,7 @@ Example `src/deceptive/__init__.py`:
 ```python
 # Public API
 from .planner import adversarial_rrt_star
-from .observer import TrajectoryClassifier, train_observer
+from .observer import TrajectoryClassifier, train_observer, load_observer
 from .deception_cost import evaluate_deception_cost
 
 # Private (not exported)
@@ -732,7 +798,11 @@ from .deception_cost import evaluate_deception_cost
 
 __version__ = "0.1.0"
 
-# Top-level imports for convenience
+# CLI entrypoints (referenced in pyproject.toml [project.scripts])
+from .index import main
+from .training import train
+
+# Package imports for convenience
 from . import deceptive
 from . import interceptor
 from . import shared
@@ -746,13 +816,14 @@ from . import data
 """Deceptive agent components (Agent D)."""
 
 from .planner import adversarial_rrt_star
-from .observer import TrajectoryClassifier, train_observer
+from .observer import TrajectoryClassifier, train_observer, load_observer
 from .deception_cost import evaluate_deception_cost
 
 __all__ = [
     "adversarial_rrt_star",
     "TrajectoryClassifier",
     "train_observer",
+    "load_observer",
     "evaluate_deception_cost",
 ]
 ```
@@ -762,7 +833,7 @@ __all__ = [
 ```python
 """Interceptor agent components (Agent I)."""
 
-from .irl import LearnedRewardFunction, maximum_entropy_irl, predict_trajectory
+from .irl import LearnedRewardFunction, maximum_entropy_irl, predict_trajectory, load_irl_model
 from .particle_filter import ParticleFilter
 from .mpc import game_theoretic_mpc
 from .belief_update import bayesian_update, compute_likelihood
@@ -771,6 +842,7 @@ __all__ = [
     "LearnedRewardFunction",
     "maximum_entropy_irl",
     "predict_trajectory",
+    "load_irl_model",
     "ParticleFilter",
     "game_theoretic_mpc",
     "bayesian_update",
@@ -851,12 +923,13 @@ __all__ = [
 
 from .schemas import TrajectoryDataset
 from .loaders import load_trajectory_dataset
-from .generators import generate_optimal_trajectories
+from .generators import generate_optimal_trajectories, generate_irl_demonstrations
 
 __all__ = [
     "TrajectoryDataset",
     "load_trajectory_dataset",
     "generate_optimal_trajectories",
+    "generate_irl_demonstrations",
 ]
 ```
 

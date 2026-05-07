@@ -283,6 +283,25 @@ def train_observer(
     return model
 ```
 
+### Loading from Checkpoint
+
+```python
+def load_observer(path: str, config: TrainingConfig) -> TrajectoryClassifier:
+    """
+    Load a trained observer from an Equinox checkpoint.
+
+    Reconstructs the model skeleton from config, then deserialises weights.
+    config.hidden_dim and config.num_goals must match the checkpoint.
+    """
+    skeleton = TrajectoryClassifier(
+        input_dim=2,
+        hidden_dim=config.hidden_dim,
+        num_goals=config.num_goals,
+        key=jax.random.PRNGKey(0),  # key unused — overwritten by deserialisation
+    )
+    return eqx.tree_deserialise_leaves(path, skeleton)
+```
+
 ---
 
 ## Module: `deception_cost.py` - Deception Cost Evaluator
@@ -407,6 +426,15 @@ class RRTConfig:
     goal_bias_probability: float = 0.1
     gamma: float = 2.0          # For rewiring radius
     max_radius: float = 3.0
+
+@dataclass
+class TrainingConfig:
+    hidden_dim: int = 64
+    num_goals: int = 3           # Set from SimulationConfig at runtime
+    num_epochs: int = 100
+    learning_rate: float = 1e-3
+    batch_size: int = 32
+    samples_per_goal: int = 200
 ```
 
 ## Testing

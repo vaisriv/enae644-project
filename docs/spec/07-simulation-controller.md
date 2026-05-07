@@ -45,9 +45,15 @@ def run_simulation(config: SimulationConfig, key: PRNGKey) -> SimulationResult:
     agent_D_config = config.deceptive_agent
     agent_I_config = config.interceptor_agent
 
-    # Load trained models
-    observer_net = load_observer(agent_D_config.observer.checkpoint_path)
-    irl_model = load_irl_model(agent_I_config.irl.checkpoint_path)
+    # Load trained models (checkpoints written by: uv run adversarial-planning-train)
+    observer_net = load_observer(
+        agent_D_config.observer.checkpoint_path,
+        config.training.observer,
+    )
+    irl_model = load_irl_model(
+        agent_I_config.irl.checkpoint_path,
+        config.training.irl,
+    )
 
     # 2. Agent D plans trajectory
     key, plan_key = jax.random.split(key)

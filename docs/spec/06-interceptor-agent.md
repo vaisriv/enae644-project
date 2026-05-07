@@ -55,7 +55,7 @@ class LearnedRewardFunction(eqx.Module):
 ```python
 def maximum_entropy_irl(
     demonstrations: List[Trajectory],
-    goals: jnp.ndarray,              # (num_demos, 2)
+    goals: jnp.ndarray,              # (num_goals, 2)
     config: IRLConfig,
     key: PRNGKey
 ) -> LearnedRewardFunction:
@@ -149,6 +149,25 @@ def predict_trajectory(
         positions.append(current_state)
 
     return create_trajectory(jnp.array(positions))
+```
+
+### Loading from Checkpoint
+
+```python
+def load_irl_model(path: str, config: IRLConfig) -> LearnedRewardFunction:
+    """
+    Load a trained IRL reward function from an Equinox checkpoint.
+
+    Reconstructs the model skeleton from config, then deserialises weights.
+    config.hidden_dim must match the checkpoint.
+    """
+    skeleton = LearnedRewardFunction(
+        state_dim=2,
+        action_dim=2,
+        hidden_dim=config.hidden_dim,
+        key=jax.random.PRNGKey(0),  # key unused — overwritten by deserialisation
+    )
+    return eqx.tree_deserialise_leaves(path, skeleton)
 ```
 
 ---
