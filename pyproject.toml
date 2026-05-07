@@ -1,6 +1,6 @@
 [project]
 name = "adversarial-planning"
-version = "0.1.0"
+version = "1.0.0"
 description = "Adversarial motion planning with deceptive trajectories and game-theoretic interception"
 readme = "README.md"
 authors = [
@@ -21,7 +21,9 @@ dependencies = [
 
 [project.scripts]
 adversarial-planning = "src:main"
-adversarial-planning-train = "src:train"
+adversarial-training = "src:train"
+demo-game = "scripts:naive_game"
+demo-irl = "scripts:visualize_irl"
 
 [build-system]
 requires = ["uv_build>=0.9.29,<0.10.0"]

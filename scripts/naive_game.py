@@ -103,7 +103,7 @@ def demo_simple_chase():
 
     # Create output directory
     print("\n[4/7] Creating output directory...")
-    output_dir = Path("outputs/demo/naive")
+    output_dir = Path("outputs/demos/naive")
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "figures").mkdir(exist_ok=True)
     (output_dir / "text").mkdir(exist_ok=True)
@@ -220,7 +220,7 @@ def demo_goal_race():
 
     # Create output directory
     print("\n[4/5] Saving results...")
-    output_dir = Path("outputs/demo/race")
+    output_dir = Path("outputs/demos")
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "figures").mkdir(exist_ok=True)
 
@@ -231,9 +231,9 @@ def demo_goal_race():
         workspace=workspace,
         trajectories=[result.trajectory_D, result.trajectory_I],
         goals=candidate_goals,
-        save_path=str(output_dir / "figures" / "race_trajectories.png"),
+        save_path=str(output_dir / "race_trajectories.png"),
     )
-    print(f"  Saved: {output_dir / 'figures' / 'race_trajectories.png'}")
+    print(f"  Saved: {output_dir / 'race_trajectories.png'}")
 
     print("\n" + "=" * 70)
     print("RACE DEMO COMPLETE!")
