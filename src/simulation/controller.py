@@ -66,9 +66,9 @@ def run_simulation(config: SimulationConfig, key: jnp.ndarray) -> SimulationResu
     # 1. Initialize workspace and agents
     # ========================================================================
     workspace_config = config.workspace
-    agent_D_config = config.deceptive_agent
-    agent_I_config = config.interceptor_agent
-    sim_params = config.simulation
+    agent_D_config = config.deceptive_agent_config
+    agent_I_config = config.interceptor_agent_config
+    sim_params = config.simulation_params
 
     # TODO: Create workspace from config
     # workspace = create_workspace_from_config(workspace_config)

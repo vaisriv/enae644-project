@@ -119,7 +119,7 @@ class InterceptorAgentConfig:
 
 
 @dataclass
-class SimulationParameters:
+class SimulationParams:
     """Core simulation parameters."""
 
     timestep: float = 0.1  # Δt for discrete time stepping
@@ -130,6 +130,35 @@ class SimulationParameters:
 
 
 @dataclass
+class ObserverTrainingConfig:
+    """Hyperparameters for training the RNN observer network."""
+
+    hidden_dim: int = 64
+    num_epochs: int = 100
+    learning_rate: float = 1e-3
+    batch_size: int = 32
+    samples_per_goal: int = 200
+
+
+@dataclass
+class IRLTrainingConfig:
+    """Hyperparameters for training the IRL reward function."""
+
+    hidden_dim: int = 64
+    num_epochs: int = 50
+    learning_rate: float = 1e-3
+    num_demonstrations: int = 500
+
+
+@dataclass
+class TrainingConfig:
+    """Configuration for offline model training (uv run adversarial-planning-train)."""
+
+    observer: ObserverTrainingConfig = field(default_factory=ObserverTrainingConfig)
+    irl: IRLTrainingConfig = field(default_factory=IRLTrainingConfig)
+
+
+@dataclass
 class SimulationConfig:
     """Complete simulation configuration.
 
@@ -137,9 +166,10 @@ class SimulationConfig:
     """
 
     workspace: WorkspaceConfig
-    deceptive_agent: DeceptiveAgentConfig
-    interceptor_agent: InterceptorAgentConfig
-    simulation: SimulationParameters
+    deceptive_agent_config: DeceptiveAgentConfig
+    interceptor_agent_config: InterceptorAgentConfig
+    simulation_params: SimulationParams
+    training: TrainingConfig = field(default_factory=TrainingConfig)
 
 
 def load_config(yaml_path: str) -> SimulationConfig:
@@ -156,14 +186,14 @@ def load_config(yaml_path: str) -> SimulationConfig:
         ValueError: If configuration is invalid
 
     Example:
-        >>> config = load_config("configs/experiment_01.yaml")
-        >>> print(config.deceptive_agent.true_goal)
+        >>> config = load_config("data/configs/experiment_simple_obstacle.yaml")
+        >>> print(config.deceptive_agent_config.true_goal)
     """
     # TODO: Implement YAML loading
     # 1. Check if file exists
     # 2. Load YAML using yaml.safe_load()
-    # 3. Parse into dataclasses
-    # 4. Validate constraints (see _validate_config)
+    # 3. Parse into dataclasses via dict_to_config()
+    # 4. Call _validate_config(config)
     # 5. Return SimulationConfig
     raise NotImplementedError("load_config not implemented")
 
@@ -187,13 +217,14 @@ def _validate_config(config: SimulationConfig) -> None:
     """
     # TODO: Implement validation checks
     # 1. Check true goal in candidates:
-    #    assert config.deceptive_agent.true_goal in config.deceptive_agent.candidate_goals
+    #    assert config.deceptive_agent_config.true_goal in config.deceptive_agent_config.candidate_goals
 
     # 2. Check candidate goals match:
-    #    assert config.deceptive_agent.candidate_goals == config.interceptor_agent.candidate_goals
+    #    assert (config.deceptive_agent_config.candidate_goals
+    #            == config.interceptor_agent_config.candidate_goals)
 
     # 3. Check deception weight:
-    #    assert 0.0 <= config.deceptive_agent.planner.deception_weight <= 1.0
+    #    assert 0.0 <= config.deceptive_agent_config.planner.deception_weight <= 1.0
 
     # 4. Check bounds:
     #    bounds = config.workspace.bounds
@@ -201,14 +232,14 @@ def _validate_config(config: SimulationConfig) -> None:
     #    assert bounds[1][0] < bounds[1][1]  # y_min < y_max
 
     # 5. Check positions in bounds:
-    #    for pos in [config.deceptive_agent.initial_position, config.interceptor_agent.initial_position]:
+    #    for pos in [config.deceptive_agent_config.initial_position,
+    #                config.interceptor_agent_config.initial_position]:
     #        assert bounds[0][0] <= pos[0] <= bounds[0][1]
     #        assert bounds[1][0] <= pos[1] <= bounds[1][1]
 
     # 6. Check positive parameters:
-    #    assert config.simulation.timestep > 0
-    #    assert config.simulation.max_time > 0
-    #    etc.
+    #    assert config.simulation_params.timestep > 0
+    #    assert config.simulation_params.max_time > 0
 
     raise NotImplementedError("_validate_config not implemented")
 
@@ -220,8 +251,7 @@ def save_config(config: SimulationConfig, yaml_path: str) -> None:
         config: SimulationConfig to save
         yaml_path: Output path for YAML file
     """
-    # TODO: Implement config serialization
-    # Convert dataclasses to dict and save with yaml.dump()
+    # TODO: Convert dataclasses to dict and save with yaml.dump()
     raise NotImplementedError("save_config not implemented")
 
 
@@ -234,8 +264,7 @@ def config_to_dict(config: SimulationConfig) -> Dict[str, Any]:
     Returns:
         Nested dictionary representation
     """
-    # TODO: Implement recursive dataclass to dict conversion
-    # Use dataclasses.asdict() or manual conversion
+    # TODO: Use dataclasses.asdict() or manual conversion
     raise NotImplementedError("config_to_dict not implemented")
 
 
@@ -248,6 +277,5 @@ def dict_to_config(data: Dict[str, Any]) -> SimulationConfig:
     Returns:
         SimulationConfig object
     """
-    # TODO: Implement dictionary to dataclass conversion
-    # Parse nested dictionaries into appropriate dataclass instances
+    # TODO: Parse nested dictionaries into appropriate dataclass instances
     raise NotImplementedError("dict_to_config not implemented")

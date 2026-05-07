@@ -1,18 +1,26 @@
-"""Simulation module for adversarial motion planning.
+"""Simulation framework for adversarial evaluation."""
 
-This module provides the main simulation controller, configuration loading,
-metrics computation, and visualization utilities.
-"""
-
-# Export main simulation components
 from src.simulation.controller import run_simulation, SimulationResult
 from src.simulation.config import (
     SimulationConfig,
     WorkspaceConfig,
     DeceptiveAgentConfig,
     InterceptorAgentConfig,
-    SimulationParameters,
+    SimulationParams,
+    TrainingConfig,
+    ObserverTrainingConfig,
+    IRLTrainingConfig,
     load_config,
+)
+from src.simulation.metrics import (
+    compute_observer_accuracy,
+    compute_path_length_ratio,
+    compute_belief_entropy_over_time,
+)
+from src.simulation.visualization import (
+    plot_workspace_with_trajectories,
+    plot_belief_evolution,
+    save_trajectories,
 )
 
 __all__ = [
@@ -24,6 +32,17 @@ __all__ = [
     "WorkspaceConfig",
     "DeceptiveAgentConfig",
     "InterceptorAgentConfig",
-    "SimulationParameters",
+    "SimulationParams",
+    "TrainingConfig",
+    "ObserverTrainingConfig",
+    "IRLTrainingConfig",
     "load_config",
+    # Metrics
+    "compute_observer_accuracy",
+    "compute_path_length_ratio",
+    "compute_belief_entropy_over_time",
+    # Visualization
+    "plot_workspace_with_trajectories",
+    "plot_belief_evolution",
+    "save_trajectories",
 ]
