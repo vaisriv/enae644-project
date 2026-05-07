@@ -61,6 +61,7 @@ perSystem.devshell.mkShell {
     packages = with pkgs; [
         # typst
         tinymist
+        touying
 
         # python
         (python313.withPackages (
