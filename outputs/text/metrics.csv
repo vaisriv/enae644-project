@@ -2,10 +2,10 @@ metric,value
 completion_time,2.3000000000000007
 observer_accuracy,1.0
 path_length_ratio,1.1235990071213846
-min_interception_distance,2.4963219165802
-goal_inference_accuracy,0.3333333333333333
-time_to_convergence,1.0
+min_interception_distance,2.4579551219940186
+goal_inference_accuracy,0.375
+time_to_convergence,6.0
 deception_effectiveness,0.4449986132338973
-interception_efficiency,0.22383771126477223
+interception_efficiency,0.1445941264014082
 distance_traveled_D,12.712071418762207
-distance_traveled_I,6.504164695739746
+distance_traveled_I,6.321130275726318

@@ -11,7 +11,6 @@ Run once offline via:
 import csv
 from pathlib import Path
 
-import equinox as eqx
 import jax
 
 from src.simulation.config import (
@@ -105,7 +104,6 @@ def train_observer_from_config(
         initial_model, initial_opt_state, start_epoch = None, None, 0
         print(f"  Starting Observer training from scratch (0 → {tr.num_epochs} epochs)")
 
-
     key, data_key = jax.random.split(key)
     print(f"  Generating {tr.samples_per_goal} trajectories × {num_goals} goals...")
     dataset = generate_optimal_trajectories(
@@ -129,7 +127,9 @@ def train_observer_from_config(
     )
     print(f"  Saved → {_OBSERVER_CHECKPOINT}")
 
-    _save_loss_csv(Path(_OBSERVER_CHECKPOINT).parent / "observer_training_loss.csv", loss_history)
+    _save_loss_csv(
+        Path(_OBSERVER_CHECKPOINT).parent / "observer_training_loss.csv", loss_history
+    )
     model = None
     return model
 
@@ -206,7 +206,11 @@ def train_irl_from_config(
     )
     print(f"  Saved → {_IRL_CHECKPOINT}  (epoch {start_epoch + tr.num_epochs})")
 
-    _append_loss_csv(Path(_IRL_CHECKPOINT).parent / "irl_training_loss.csv", loss_history, start_epoch)
+    _append_loss_csv(
+        Path(_IRL_CHECKPOINT).parent / "irl_training_loss.csv",
+        loss_history,
+        start_epoch,
+    )
     return model
 
 

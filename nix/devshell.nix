@@ -54,7 +54,8 @@ perSystem.devshell.mkShell {
             name = "tyc";
             category = "[typst]";
             help = "compile";
-            command = "nix run .#report";
+            # command = "nix run .#report";
+            command = "tinymist compile reports/main.typ --root=.";
         }
     ];
 

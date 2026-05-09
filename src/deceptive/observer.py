@@ -13,6 +13,7 @@ from src.simulation.config import ObserverConfig, ObserverTrainingConfig
 
 _SIDECAR_SUFFIX = ".optstate.pkl"
 
+
 class TrajectoryClassifier(eqx.Module):
     """GRU-based trajectory classifier for goal prediction.
 
@@ -95,7 +96,7 @@ def load_obs_training_state(
 
     observer_cfg = ObserverConfig(
         checkpoint_path=checkpoint_path,
-        num_goals=config.num_goals, # type: ignore[unresolved-attribute]
+        num_goals=config.num_goals,  # type: ignore[unresolved-attribute]
         hidden_size=config.hidden_dim,
     )
     model = load_observer(checkpoint_path, observer_cfg)

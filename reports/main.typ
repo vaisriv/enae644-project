@@ -1,15 +1,12 @@
 #import "../lib/typst/bamdone-ieeeconf.typ": ieee
+#import "@preview/cetz:0.5.2"
 
 #show: ieee.with(
     title: [ENAE644 Term Project],
     abstract: [
-        This project implements and evaluates adversarial motion planning algorithms in a two-agent scenario where a deceptive agent attempts to reach a hidden goal while concealing its intent, and an interceptor agent seeks to infer the hidden goal and intercept the deceptive agent. The deceptive agent employs Adversarial RRT\*, a sampling-based planner that extends RRT\* by incorporating a learned deception cost function. A recurrent neural network serves as a surrogate observer, and the planner balances path optimality against observer classification accuracy using a weighted cost function. The interceptor agent combines inverse reinforcement learning to recover a behavioral model of the deceptive agent from historical demonstrations, particle filtering for online belief distribution tracking over candidate goals, and game-theoretic model predictive control for real-time interception planning with replanning. Both agents operate in a continuous two-dimensional workspace and are implemented in Python using JAX and Equinox for differentiable programming and GPU acceleration.
+        This project implements and evaluates adversarial motion planning algorithms in a two-agent scenario where a deceptive agent (Agent D) attempts to reach a hidden goal while an interceptor (Agent I) seeks to infer that goal and intercept. Agent D extends RRT\* with a learned deception cost in which a recurrent neural network serves as a surrogate observer, balancing path optimality against observer classification accuracy. Agent I combines inverse reinforcement learning to recover a behavioral model of Agent D, a particle filter for online belief tracking over candidate goals, and game-theoretic model predictive control with real-time replanning. Both agents operate in a continuous 2D workspace and are implemented in Python using JAX and Equinox.
 
-        #set text(fill: blue)
-
-        The full system was implemented end-to-end, encompassing neural network training, adversarial planning, and empirical evaluation. In the primary adversarial scenario, the deceptive agent successfully reached its goal in 2.30 s with a path length 12.4% above the optimal, while the interceptor was kept at a minimum distance of 2.50 units. However, the RNN observer achieved perfect classification accuracy (1.000) for all tested deception weights $alpha in {0.0, 0.25, 0.5, 0.75, 1.0}$, indicating that the three well-separated candidate goals in the experimental workspace were trivially distinguishable regardless of trajectory shaping. The principal finding is that geometric goal separability---not the deception algorithm's parameterization---was the dominant factor limiting deceptive effectiveness, pointing to workspace and goal-set design as a critical but often overlooked dimension in adversarial motion planning research.
-
-        #set text(fill: black)
+        In the primary trial, Agent D reached its goal in 2.30 s with a path length 12.4% above optimal, holding Agent I to a minimum distance of 2.50 units. However, the RNN observer attained perfect classification (1.000) across all tested deception weights $alpha in {0.0, 0.25, 0.5, 0.75, 1.0}$, indicating that the three well-separated candidate goals were trivially distinguishable regardless of trajectory shaping. The principal finding is that geometric goal separability---not the deception parameterization---dominated effectiveness, pointing to workspace and goal-set design as a critical but often overlooked dimension in adversarial motion planning.
     ],
     authors: (
         (
@@ -38,7 +35,144 @@
 
 = Introduction <introduction>
 
-The goal of this project is to implement and evaluate algorithms from two complementary sub-fields of adversarial motion planning. The first is _deceptive motion planning_, which is concerned with generating trajectories that conceal the agent's true objective from an observer @nichols2022adversarial @xu2020single. The second is _goal identification and interception_, which seeks to infer an observed agent's hidden objective and plan a trajectory to intercept it @zeng2023recognition @tastan2012learning. Rather than studying these in isolation, the project will pit a deceptive planner against an interception-focused planner in a shared environment, providing a direct adversarial evaluation of each algorithm's strengths and limitations. Both agents will employ planning methods at least as sophisticated as RRT\*, incorporating learning-based and game-theoretic components on top of their respective base planners.
+The goal of this project is to implement and evaluate algorithms from two complementary sub-fields of adversarial motion planning. The first is _deceptive motion planning_, which is concerned with generating trajectories that conceal the agent's true objective from an observer @nichols2022adversarial @xu2020single. The second is _goal identification and interception_, which seeks to infer an observed agent's hidden objective and plan a trajectory to intercept it @zeng2023recognition @tastan2012learning. Rather than studying these in isolation, the project pits a deceptive planner against an interception-focused planner in a shared environment, providing a direct adversarial evaluation of each algorithm's strengths and limitations. Both agents employ planning methods at least as sophisticated as RRT\*, incorporating learning-based and game-theoretic components on top of their respective base planners.
+
+#figure(
+    cetz.canvas({
+        import cetz.draw: *
+
+        // Workspace boundary
+        rect(
+            (0, 0),
+            (8, 5),
+            stroke: (paint: gray, thickness: 0.6pt),
+            fill: none,
+        )
+
+        // Off-center obstacle (irregular quadrilateral)
+        line(
+            (3.0, 1.8),
+            (4.6, 1.6),
+            (4.9, 3.1),
+            (3.3, 3.0),
+            close: true,
+            stroke: (paint: gray.darken(20%), thickness: 0.5pt),
+            fill: gray.lighten(40%),
+        )
+
+        // True goal g* (filled, with concentric ring)
+        circle(
+            (7.0, 4.0),
+            radius: 0.22,
+            fill: green.darken(15%),
+            stroke: (paint: green.darken(40%), thickness: 0.8pt),
+        )
+        circle(
+            (7.0, 4.0),
+            radius: 0.34,
+            fill: none,
+            stroke: (paint: green.darken(40%), thickness: 0.4pt),
+        )
+        content((7.0, 4.6), text(size: 7pt, fill: green.darken(40%))[$g^*$])
+
+        // Distractor goal g_3 (hollow, near g* for ambiguity)
+        circle(
+            (5.0, 4.5),
+            radius: 0.18,
+            fill: white,
+            stroke: (paint: gray.darken(25%), thickness: 0.6pt),
+        )
+        content((5.0, 4.92), text(size: 7pt, fill: gray.darken(35%))[$g_3$])
+
+        // Distractor goal g_2 (hollow)
+        circle(
+            (6.5, 1.0),
+            radius: 0.18,
+            fill: white,
+            stroke: (paint: gray.darken(25%), thickness: 0.6pt),
+        )
+        content((6.5, 0.55), text(size: 7pt, fill: gray.darken(35%))[$g_2$])
+
+        // Agent D start
+        circle((0.7, 1.0), radius: 0.16, fill: blue, stroke: none)
+        content((0.7, 0.55), text(size: 7pt, fill: blue)[$D_0$])
+
+        // Agent D's deceptive trajectory: bows downward (toward g_2)
+        // before climbing around the obstacle to g*
+        bezier(
+            (0.86, 1.05),
+            (6.78, 4.0),
+            (3.0, 0.3),
+            (6.0, 1.2),
+            stroke: (paint: blue, thickness: 1.2pt),
+        )
+
+        // Agent I start
+        circle((1.0, 4.2), radius: 0.16, fill: orange, stroke: none)
+        content((1.0, 4.6), text(size: 7pt, fill: orange)[$I_0$])
+
+        // Belief arrows (faded, dotted) from I_0 to all three candidate goals
+        // Strongest belief: to g*
+        line(
+            (1.16, 4.18),
+            (6.78, 4.05),
+            stroke: (
+                paint: orange.transparentize(20%),
+                thickness: 0.9pt,
+                dash: "dotted",
+            ),
+        )
+        // Medium belief: to g_3
+        line(
+            (1.16, 4.24),
+            (4.83, 4.48),
+            stroke: (
+                paint: orange.transparentize(55%),
+                thickness: 0.6pt,
+                dash: "dotted",
+            ),
+        )
+        // Weakest belief: to g_2
+        line(
+            (1.16, 4.10),
+            (6.34, 1.10),
+            stroke: (
+                paint: orange.transparentize(75%),
+                thickness: 0.4pt,
+                dash: "dotted",
+            ),
+        )
+
+        // Agent I's in-progress interception trajectory (dashed, with arrowhead)
+        bezier(
+            (1.16, 4.10),
+            (5.5, 4.0),
+            (2.5, 4.5),
+            (4.5, 4.0),
+            stroke: (
+                paint: orange.darken(15%),
+                thickness: 1.0pt,
+                dash: "dashed",
+            ),
+            mark: (end: ">", fill: orange.darken(15%)),
+        )
+
+        // Annotations
+        content(
+            (3.2, 0.18),
+            text(size: 6.5pt, style: "italic", fill: blue)[deceptive path],
+        )
+        content(
+            (2.7, 4.85),
+            text(
+                size: 6.5pt,
+                style: "italic",
+                fill: orange.darken(15%),
+            )[belief & intercept],
+        )
+    }),
+    caption: [High-level overview of the adversarial scenario. Agent D (blue) plans a deceptive trajectory from $D_0$ to its hidden true goal $g^*$, routing around obstacles in a manner that initially obscures its objective. Agent I (orange) maintains a belief distribution over the candidate goals ${g^*, g_2, g_3}$---depicted as faded arrows whose opacity is proportional to belief mass---and replans an interception trajectory online as the belief sharpens.],
+) <fig-overview>
 
 = Motivation <motivation>
 
@@ -64,12 +198,6 @@ A related body of work frames multi-agent planning as a dynamic game in which ea
 
 Most closely related to the present work, Netter and Vamvoudakis~@netter2024motion propose a motion planning framework in which a player agent navigates a multi-agent environment while simultaneously identifying and avoiding potential adversaries using Gaussian process classification. Their method includes real-time replanning to avoid likely adversarial agents and distinguishes adversaries from benign agents to prevent unnecessary evasive maneuvers. This project builds on a similar premise but inverts the emphasis: rather than treating interception avoidance as a byproduct of adversary classification, the deceptive agent here will actively minimize observer accuracy as a first-class planning objective, while the interceptor will be a fully autonomous adversary rather than a fixed behavioral model.
 
-// TODO:
-// - add a figure/diagram that illustrates the problem we are solving (somewhere within this section)
-//   suggested: a 2D workspace bird's-eye view showing Agent D's start + candidate goals,
-//   Agent I's start, obstacles, the true trajectory, and the belief distribution arrows;
-//   this should go between the Related Work and Formal Problem Definition sections or at
-//   the top of Formal Problem Definition as a motivating visual
 = Formal Problem Definition <formal-problem-definition>
 
 This section formalizes the adversarial motion planning problem as a two-agent scenario in which a deceptive agent attempts to reach a hidden goal while concealing its intent, and an interceptor agent seeks to infer the hidden goal and intercept the deceptive agent before the goal is reached.
@@ -219,27 +347,15 @@ The game proceeds as follows. Agent D generates a deceptive trajectory using Adv
 
 == Overview <overview>
 
-The project is implemented in Python, chosen for its extensive ecosystem of machine learning and scientific computing libraries. In particular, we use JAX (via the Equinox library) as the primary framework for differentiable programming, automatic differentiation, and GPU-accelerated computation.
-
-The core of the project involves two competing agents in a continuous two-dimensional workspace. The first agent employs a deceptive motion planning algorithm building on Adversarial RRT\* @nichols2022adversarial, which augments the sampling-based RRT\* planner with a learned deception cost to generate trajectories that minimize an observer's ability to infer the agent's true goal. Entropy-based deceptive planning techniques @xu2020single @xu2019goal inform the design of the deception objective. The second agent utilizes an identification and interception strategy, drawing on techniques from inverse reinforcement learning and game-theoretic prediction @zeng2023recognition @tastan2012learning @lecleach2021lucidgames, with the objective of recognizing the deceptive agent's true goal and planning an intercept trajectory in real time. The approach of coupling adversary identification with reactive planning follows the framework proposed by Netter and Vamvoudakis~@netter2024motion, adapted to the adversarial evaluation setting. Both agents thus operate well beyond basic shortest-path planning: the deceptive agent layers a learned deception metric on top of RRT\*, while the interceptor combines online goal inference with reactive replanning.
-
-Of note, despite several of the referenced algorithms being originally developed for three-dimensional environments (e.g., first-person shooter game maps @tastan2012learning), we work in a continuous two-dimensional workspace for ease of development and in the interest of completing the project within the semester. The simulation environment is custom-built in Python, providing full control over the experimental setup and enabling systematic evaluation of each algorithm's performance under varying conditions.
-
-#set text(fill: blue)
+The project is implemented in Python using JAX (via the Equinox library) for differentiable programming, automatic differentiation, and GPU-accelerated computation. Despite several of the referenced algorithms being originally developed for three-dimensional environments (e.g., first-person shooter game maps @tastan2012learning), we work in a continuous 2D workspace for ease of development within the semester, with a custom-built simulator providing full control over the experimental setup.
 
 == Implementation <implementation>
 
-The system was implemented end-to-end in Python using JAX and Equinox. A functional programming approach was adopted throughout: trajectories are represented as JAX pytrees, enabling automatic differentiation and JIT compilation, and neural network parameters follow Equinox conventions for clean separation of static structure and learnable leaves.
+The deceptive agent's planning system consists of three coupled components. The surrogate observer is a GRU-based recurrent neural network that maps a variable-length sequence of 2D positions to a probability distribution over candidate goals, trained offline on synthetic goal-directed trajectories from a standard (non-deceptive) RRT variant using cross-entropy loss. The deception cost function consumes the observer's output and computes either the negative entropy (entropy mode) or the classifier probability assigned to the true goal (accuracy mode). The Adversarial RRT\* planner wraps these components inside an asymptotically optimal sampling-based search, evaluating the combined cost $alpha J_"path" + (1-alpha) J_"deception"$ over candidate parent paths and rewiring nearby nodes; to bound JIT cost, the observer input is truncated to the most recent 20 positions and rewiring uses path-length cost only.
 
-The shared infrastructure layer provides the geometric primitives on which both agents depend. The workspace representation supports circular and convex polygon obstacles with JIT-compiled collision detection using point-to-segment distance tests and ray-casting for polygon containment. Trajectory data structures store time-parameterized position and velocity arrays with linear interpolation for continuous-time queries, path length computation, and partial trajectory extraction. The agent controller interface defines a common action type used by both simplified test controllers and the full adversarial agents.
+The interceptor agent's inference and planning system comprises three layers. A learned reward function---a three-layer MLP mapping (state, action) pairs to a scalar reward---is trained offline via a contrastive noise-estimation objective that maximizes the reward on each expert (state, action) step relative to eight uniformly-sampled random actions. At runtime, a particle filter maintains a weighted ensemble of goal hypotheses; each particle's weight is updated proportionally to the likelihood computed from the learned reward, with systematic resampling when the effective sample size falls below half the particle count. A game-theoretic model predictive controller plans Agent I's motion by computing a belief-weighted expected trajectory for Agent D (forward-simulating the learned reward policy for each candidate goal), then running Adam gradient descent on a horizon-length control sequence to minimize the tracking cost.
 
-The deceptive agent's planning system consists of three coupled components. The surrogate observer is a GRU-based recurrent neural network that maps a variable-length sequence of 2D positions to a probability distribution over candidate goals. It is trained offline on synthetic goal-directed trajectories generated by a standard (non-deceptive) variant of the planner, using cross-entropy loss with the Adam optimizer. The deception cost function consumes the observer's output and computes either the negative entropy $-H(f_theta(xi))$ (entropy mode, where lower entropy means the observer is more confident) or the classifier probability assigned to the true goal $f_theta(xi)[g^*]$ (accuracy mode). The Adversarial RRT\* planner wraps these components inside an asymptotically optimal sampling-based search: at each iteration it samples a configuration, steers toward it, evaluates the combined cost $alpha J_"path" + (1-alpha) J_"deception"$ over candidate parent paths, adds the best node, and rewires nearby nodes. To avoid repeated JIT recompilation on growing path arrays, the observer input is truncated to a fixed window of the most recent 20 positions; rewiring decisions use path-length cost only to avoid calling the observer once per neighboring node.
-
-The interceptor agent's inference and planning system comprises three layers. A learned reward function---a three-layer MLP mapping (state, action) pairs to a scalar reward---is trained offline via a contrastive noise-estimation objective: for each expert (state, action) step the loss maximizes the reward relative to eight uniformly-sampled random actions. At runtime, a particle filter maintains a weighted ensemble of goal hypotheses; each particle's weight is updated proportionally to the likelihood computed from the learned reward function, with systematic resampling when the effective sample size falls below half the particle count. A game-theoretic model predictive controller plans Agent I's motion by computing a belief-weighted expected trajectory for Agent D (by forward-simulating the learned reward policy for each candidate goal), then running Adam gradient descent on a horizon-length control sequence to minimize the tracking cost.
-
-The simulation controller ties both agents together. Agent D executes its pre-planned trajectory by interpolating waypoints at each timestep; Agent I updates its particle filter belief, solves the MPC problem, and integrates the resulting velocity command. The episode terminates when Agent D reaches its true goal (within 0.5 units) or Agent I intercepts Agent D (agents within 0.5 units of each other).
-
-A two-stage pipeline separates training from evaluation. The training stage generates synthetic datasets, trains both neural networks, and serializes the resulting model weights to disk using Equinox's leaf serialization. The evaluation stage loads the saved checkpoints, runs the full adversarial simulation, records trajectories and metrics, and produces all figures.
+A simulation controller ties both agents together: Agent D executes its pre-planned trajectory by interpolating waypoints, while Agent I updates its belief, solves the MPC problem, and integrates the resulting velocity command at each timestep. A two-stage pipeline separates training from evaluation: the training stage generates datasets, trains both networks, and saves checkpoints; the evaluation stage loads them, runs the full simulation, and produces all figures and metrics.
 
 == Procedure <procedure>
 
@@ -264,26 +380,17 @@ The observer network converged rapidly. Cross-entropy loss dropped from 0.155 at
 
 == Primary Adversarial Trial <results-primary>
 
-In the representative trial with $alpha = 0.5$---as displayed in @fig-trajectories\---, Agent D successfully reached its true goal $(9, 9)$ at $t = 2.30$ s. The deceptive trajectory spanned 12.7 units compared to an optimal straight-line distance of 11.3 units, yielding a path length ratio of 1.124.
+In the representative trial with $alpha = 0.5$, Agent D successfully reached its true goal $(9, 9)$ at $t = 2.30$ s. Agent I's minimum approach distance to Agent D---charted with respect to time in @fig-distance\---during the episode was 2.496 units, comfortably above the 0.5-unit interception threshold. The deceptive trajectory---as displayed in @fig-trajectories\---spanned 12.7 units compared to an optimal straight-line distance of 11.3 units, yielding a path length ratio of 1.124.
+
+#figure(
+    image("../outputs/figures/distance_over_time.png", width: 75%),
+    caption: [Inter-agent distance as a function of time. The dashed horizontal line marks the 0.5-unit interception threshold. Agent I never approaches close enough to intercept Agent D, which reaches its goal at $t = 2.30$ s.],
+) <fig-distance>
 
 #figure(
     image("../outputs/figures/trajectories.png", width: 85%),
     caption: [Representative adversarial trial ($alpha = 0.5$). Agent D (blue) navigates from $(1,1)$ to its true goal at $(9,9)$ using a deceptive path around the central obstacle. Agent I (orange) pursues Agent D but fails to intercept before the goal is reached. Stars mark the three candidate goals; the gray circle is the obstacle.],
 ) <fig-trajectories>
-
-Agent I's minimum approach distance to Agent D---charted with respect to time in @fig-distance\---during the episode was 2.496 units, comfortably above the 0.5-unit interception threshold.
-
-#figure(
-    image("../outputs/figures/distance_over_time.png", width: 85%),
-    caption: [Inter-agent distance as a function of time. The dashed horizontal line marks the 0.5-unit interception threshold. Agent I never approaches close enough to intercept Agent D, which reaches its goal at $t = 2.30$ s.],
-) <fig-distance>
-
-Despite Agent D's win, the RNN observer assigned probability 1.000 to the true goal throughout the trajectory, indicating that the deceptive trajectory provided no measurable obfuscation to the surrogate observer. The particle filter's MAP estimate equaled the true goal for 33% of timesteps (goal inference accuracy), reflecting transient ambiguity in the first few steps before the belief converged; time-to-convergence (first time the maximum belief exceeded 0.8) was 1.0 s. Both belief signals are shown as a function of simulation time in @fig-belief.
-
-#figure(
-    image("../outputs/figures/belief_evolution.png", width: 100%),
-    caption: [Goal belief evolution over the episode. _Left_: particle filter belief distribution; the probability mass assigned to the true goal $g_0 = (9,9)$ begins near 0.33 (uniform prior) and converges toward 1.0 after an initial period of ambiguity. _Right_: RNN observer probability distribution; the observer assigns probability 1.000 to the true goal from the very first observed positions, confirming perfect classification throughout the episode.],
-) <fig-belief>
 
 Performance metrics for the primary trial are summarized in @tbl-metrics.
 
@@ -308,14 +415,14 @@ Performance metrics for the primary trial are summarized in @tbl-metrics.
     caption: [Summary metrics for the primary adversarial trial ($alpha = 0.5$).],
 ) <tbl-metrics>
 
-== Deception Weight Ablation <results-ablation>
-
-@fig-alpha-sweep shows the results of the planning-only ablation sweep across five values of $alpha$. Observer accuracy remained 1.000 for every tested value, confirming that goal classification accuracy is independent of the deception weight in this configuration. Path length ratios ranged from 1.061 ($alpha = 0.75$) to 1.203 ($alpha = 0.25$), with no consistent monotone relationship between $alpha$ and path length. Deception effectiveness, computed as $alpha(1 - "acc") + (1-alpha)(1/"plr")$, decreased from 0.875 at $alpha = 0$ to 0.0 at $alpha = 1$.
+Despite Agent D's win, the RNN observer assigned probability 1.000 to the true goal throughout the trajectory, indicating that the deceptive trajectory provided no measurable obfuscation to the surrogate observer. The particle filter's MAP estimate equaled the true goal for 33% of timesteps (goal inference accuracy), reflecting transient ambiguity in the first few steps before the belief converged; time-to-convergence (first time the maximum belief exceeded 0.8) was 1.0 s. Both belief signals are shown as a function of simulation time in @fig-belief.
 
 #figure(
-    image("../outputs/figures/alpha_sweep_comparison.png", width: 100%),
-    caption: [Ablation results across deception weights $alpha in {0.0, 0.25, 0.5, 0.75, 1.0}$. _Left_: planned trajectories for each $alpha$ (colors from purple to yellow). _Center_: RNN observer accuracy (constant at 1.000). _Right_: path length ratio showing the efficiency cost of deception.],
-) <fig-alpha-sweep>
+    image("../outputs/figures/belief_evolution.png", width: 100%),
+    caption: [Goal belief evolution over the episode. _Top_: particle filter belief distribution; the probability mass assigned to the true goal $g_0 = (9,9)$ begins near 0.33 (uniform prior) and converges toward 1.0 after an initial period of ambiguity. _Bottom_: RNN observer probability distribution; the observer assigns probability 1.000 to the true goal from the very first observed positions, confirming perfect classification throughout the episode.],
+) <fig-belief>
+
+== Deception Weight Ablation <results-ablation>
 
 @tbl-sweep tabulates the per-$alpha$ measurements. The constant observer accuracy means that the composite deception effectiveness score is driven entirely by the path length ratio term.
 
@@ -336,6 +443,13 @@ Performance metrics for the primary trial are summarized in @tbl-metrics.
     caption: [Deception weight ablation results. Observer accuracy is 1.000 for all $alpha$ values.],
 ) <tbl-sweep>
 
+@fig-alpha-sweep shows the results of the planning-only ablation sweep across five values of $alpha$. Observer accuracy remained 1.000 for every tested value, confirming that goal classification accuracy is independent of the deception weight in this configuration. Path length ratios ranged from 1.061 ($alpha = 0.75$) to 1.203 ($alpha = 0.25$), with no consistent monotone relationship between $alpha$ and path length. Deception effectiveness, computed as $alpha(1 - "acc") + (1-alpha)(1/"plr")$, decreased from 0.875 at $alpha = 0$ to 0.0 at $alpha = 1$.
+
+#figure(
+    image("../outputs/figures/alpha_sweep_comparison.png", height: 70%),
+    caption: [Ablation results across deception weights $alpha in {0.0, 0.25, 0.5, 0.75, 1.0}$. _Top_: planned trajectories for each $alpha$ (colors from purple to yellow). _Center_: RNN observer accuracy (constant at 1.000). _Bottom_: path length ratio showing the efficiency cost of deception.],
+) <fig-alpha-sweep>
+
 = Discussion <discussion>
 
 The most striking result is that the RNN observer achieved perfect classification accuracy across all tested conditions. The three candidate goals in the experiment are placed at well-separated corners of a $10 times 10$ workspace---$(9,9)$, $(9,1)$, and $(1,9)$---and any trajectory originating from $(1,1)$ that reaches one of these corners will exhibit strong directional commitment early in its execution. Even with $alpha = 0$, where the Adversarial RRT\* planner devotes the entire cost budget to deception, the RNN learned features sufficient for perfect discrimination. This outcome contrasts with the results reported by Nichols et al.~@nichols2022adversarial, who observed observer accuracy dropping to roughly 10% on adversarially planned paths (compared to 46% on optimal paths) when goals were arranged with greater geometric ambiguity. The critical difference appears to be goal-set geometry: in their configuration, all candidate goals lie on the same arc from the start, so optimal paths toward different goals share a long common prefix, making deceptive rerouting effective. In our configuration, the goals are in three distinct quadrants, so even a heavily perturbed trajectory quickly reveals which quadrant it is heading toward.
@@ -353,5 +467,3 @@ This project implemented a complete adversarial motion planning system: a decept
 The primary experimental finding is that Agent D won the adversarial episode, reaching its goal in 2.30 s while maintaining a safe distance of 2.50 units from Agent I. However, the deception mechanism failed on its own terms: the RNN observer classified Agent D's true goal with probability 1.000 regardless of the deception weight $alpha$. This occurred because the experimental workspace's three widely-separated candidate goals are geometrically distinguishable from any trajectory prefix, rendering the deception objective ineffective. The ablation sweep over $alpha$ confirmed this: observer accuracy was flat at 1.000 for all five tested values.
 
 The key limitation of this work is scale: a single trial, three candidate goals, and a simple workspace are insufficient to establish statistical conclusions about algorithm performance. Future work should evaluate on workspace configurations with high goal ambiguity (as used in @nichols2022adversarial), extend to 3D environments, and conduct repeated trials with randomized initial conditions. On the interceptor side, replacing the contrastive IRL objective with full maximum entropy IRL and extending the MPC horizon would likely produce more competitive interception performance. More broadly, the framework would benefit from a closed-loop treatment in which Agent D re-plans dynamically in response to observed interceptor behavior, rather than executing a fixed offline trajectory.
-
-#set text(fill: black)

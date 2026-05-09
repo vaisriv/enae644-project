@@ -8,10 +8,10 @@ Specifies the offline training pipeline for both learned models — the RNN surr
 
 Training is separated from simulation via two CLI entry points:
 
-| Command                             | Source                  | Description                         |
-| ----------------------------------- | ----------------------- | ----------------------------------- |
-| `uv run adversarial-train` | `src/training.py:train` | Train all models, write checkpoints |
-| `uv run adversarial-planning`       | `src/index.py:main`     | Load checkpoints, run simulation    |
+| Command                       | Source                  | Description                         |
+| ----------------------------- | ----------------------- | ----------------------------------- |
+| `uv run adversarial-train`    | `src/training.py:train` | Train all models, write checkpoints |
+| `uv run adversarial-planning` | `src/index.py:main`     | Load checkpoints, run simulation    |
 
 This separation ensures:
 
@@ -192,8 +192,8 @@ The training loop implementation lives in `src/interceptor/irl.py` as `maximum_e
 
 All model artifacts are written to `data/models/`, treated as a generated directory (not committed to version control).
 
-| File                              | Contents                                                        |
-| --------------------------------- | --------------------------------------------------------------- |
+| File                           | Contents                                                        |
+| ------------------------------ | --------------------------------------------------------------- |
 | `data/models/observer_rnn.eqx` | Trained `TrajectoryClassifier` weights (Equinox pytree leaves)  |
 | `data/models/irl_reward.eqx`   | Trained `LearnedRewardFunction` weights (Equinox pytree leaves) |
 

@@ -113,8 +113,8 @@ def plot_belief_evolution(
 ):
     """Plot belief distribution evolution over simulation steps.
 
-    When ``observer_belief_history`` is provided, renders two side-by-side panels:
-    the particle-filter belief (left) and the RNN observer goal probabilities (right).
+    When ``observer_belief_history`` is provided, renders two one-over-another panels:
+    the particle-filter belief (top) and the RNN observer goal probabilities (bottom).
     Otherwise renders a single panel.
 
     Args:
@@ -125,15 +125,17 @@ def plot_belief_evolution(
         save_path: Optional path to save figure
     """
     has_observer = bool(observer_belief_history)
-    ncols = 2 if has_observer else 1
-    fig, axes = plt.subplots(1, ncols, figsize=(7 * ncols, 5), sharey=True)
-    if ncols == 1:
+    nrows = 2 if has_observer else 1
+    fig, axes = plt.subplots(nrows, 1, figsize=(7, 5 * nrows), sharex=True)
+    if nrows == 1:
         axes = [axes]  # type: ignore[list-item]
 
     colors = plt.cm.tab10(range(len(belief_history[0])))  # type: ignore[attr-defined]
     num_goals = int(jnp.array(belief_history[0]).shape[0])
 
-    def _draw_panel(ax, history: List[jnp.ndarray], title: str) -> None:
+    def _draw_panel(
+        ax, history: List[jnp.ndarray], title: str, show_legend: bool = True
+    ) -> None:
         data = jnp.stack(history, axis=0)
         steps = jnp.arange(len(history))
         for goal_id in range(num_goals):
@@ -158,10 +160,11 @@ def plot_belief_evolution(
         ax.set_ylabel("Probability", fontsize=11)
         ax.set_title(title, fontsize=12, fontweight="bold")
         ax.set_ylim(0, 1.05)
-        ax.legend(loc="best", fontsize=9)
         ax.grid(True, alpha=0.3)
+        if show_legend:
+            ax.legend(loc="best", fontsize=9)
 
-    _draw_panel(axes[0], belief_history, "Particle Filter Belief")
+    _draw_panel(axes[0], belief_history, "Particle Filter Belief", not has_observer)
     if has_observer:
         _draw_panel(axes[1], observer_belief_history, "RNN Observer Probabilities")  # type: ignore[arg-type]
 

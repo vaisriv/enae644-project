@@ -1,7 +1,13 @@
 """Deceptive agent components (Agent D)."""
 
 from .deception_cost import evaluate_deception_cost
-from .observer import TrajectoryClassifier, load_observer, train_observer, save_obs_training_state, load_obs_training_state
+from .observer import (
+    TrajectoryClassifier,
+    load_observer,
+    train_observer,
+    save_obs_training_state,
+    load_obs_training_state,
+)
 from .planner import adversarial_rrt_star
 from .tree import RRTNode, RRTTree
 

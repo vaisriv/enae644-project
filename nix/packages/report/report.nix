@@ -13,6 +13,14 @@ inputs.typix.lib.${system}.buildTypstProjectLocal {
         root = ".";
     };
 
+    # unstable_typstPackages = [
+    #     {
+    #         name = "cetz";
+    #         version = "0.5.2";
+    #         hash = "sha256-wttZ+L+VPlTLGKPN/exYXozRjMNdXLShhYVTQt4KV/E=";
+    #     }
+    # ];
+
     fontPaths =
         with pkgs;
         map (p: "${p}/share/fonts/opentype") [

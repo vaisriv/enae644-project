@@ -265,7 +265,7 @@ def _plot_alpha_sweep(alphas, rows, traj_by_alpha, config, figures_dir: Path) ->
 
     workspace = create_workspace_from_config(config.workspace)
 
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    fig, axes = plt.subplots(3, 1, figsize=(5, 15))
 
     # -- Panel 1: Trajectories for each α
     ax = axes[0]
